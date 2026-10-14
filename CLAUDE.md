@@ -18,6 +18,21 @@ BanAI is an MVP AI wardrobe designer for standard straight wardrobes only. Three
   - how the result will be verified
 
   Get the user's approval before implementing. This applies to every phase and to any change outside a phase.
+- **Test gate between phases.** Before reporting a phase as complete and moving on, run the **full test suite**:
+  - **Regression:** every existing backend and frontend test, not just the new ones: `uv run pytest` and `npm test`.
+  - **End-to-end:** the E2E tests for the user flows that exist so far, run with **two tools**:
+    - **Playwright:** the automated, repeatable suite in `frontend/tests/e2e/`. It is committed and runs headless. Phase 3 adds the first suite, and it grows each phase toward the full acceptance scenario (spec §21).
+    - **Claude in Chrome** (`mcp__claude-in-chrome__*`, after loading the `claude-in-chrome` skill): a live, visual walkthrough of the same flows in a real Chrome tab. Check rendering, 3D interaction, layout, and the browser console, and record a GIF of the key flow with `gif_creator`. Use it to catch what headless assertions miss, not as a replacement for Playwright.
+  - **Do not move to the next phase unless every test passes.** Report the actual test output in the phase report. If anything fails, fix it, or report the failure and stop. Never skip or disable a test to get green.
+- **Security review gate between phases.** Before moving to the next phase, run a security review of everything the phase changed. Use the **security-reviewer** agent and/or `/security-review`, covering:
+  - input validation (including LLM-generated input)
+  - secrets
+  - authorization
+  - injection
+  - DoS limits
+  - dependency vulnerabilities (`npm audit`)
+
+  **Do not move to the next phase until the security review passes:** every CRITICAL and HIGH finding fixed and re-verified. Summarize the review result in the phase report.
 - **Phased delivery.** Work proceeds Phase 1 → 10 (`docs/architecture.md` §10a). After each phase, stop, report (what was implemented, files changed, real test output, known issues, next step), and wait for the user's approval. Never roll into the next phase on your own.
 - **Branches.** All work lands on `dev`, which Railway auto-deploys to the `dev` environment. Pushing or merging to `main` deploys **production** and needs explicit user approval.
 - **Excluded features (do not build):** pricing, quotes, orders, accounts or registration, dashboards, manufacturing/CNC export, feasibility rules, room design, image uploads, voice, mobile-first layout, drag-and-drop geometry, and any AI change applied without approval. The app must never claim a design is manufacturable.
