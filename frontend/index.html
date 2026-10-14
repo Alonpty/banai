@@ -7,10 +7,27 @@
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
+    <header class="topbar">
+      <h1 class="topbar__title">BanAI Wardrobe Designer</h1>
+      <div class="topbar__actions">
+        <label class="toggle">
+          <input type="checkbox" id="toggle-interior" />
+          <span>Show interior</span>
+        </label>
+        <span class="topbar__units">Units: cm</span>
+      </div>
+    </header>
+    <div class="banner banner--error" id="error-banner" role="alert" hidden></div>
     <main class="workspace">
-      <aside class="panel" id="chat-panel"><h2>AI Designer</h2></aside>
-      <section class="viewer" id="viewer"></section>
-      <aside class="panel" id="properties-panel"><h2>Properties</h2></aside>
+      <aside class="panel" id="chat-panel" aria-label="AI designer">
+        <h2 class="panel__title">AI Designer</h2>
+        <p class="panel__note">The AI design agent arrives in Phase 5.</p>
+      </aside>
+      <section class="viewer" id="viewer" aria-label="3D viewer"></section>
+      <aside class="panel" id="properties-panel" aria-label="Properties">
+        <h2 class="panel__title">Selection</h2>
+        <p class="panel__note" id="selection-readout">Click a component in the 3D view.</p>
+      </aside>
     </main>
     <script type="module" src="/src/main.js"></script>
   </body>

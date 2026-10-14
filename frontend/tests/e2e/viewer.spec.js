@@ -1,0 +1,52 @@
+import { clickComponent, expect, openDesigner, paintedRatio, selection, test } from './fixtures.js';
+
+test.describe('Phase 3: 3D viewer', () => {
+  test.beforeEach(async ({ page }) => openDesigner(page));
+
+  test('renders the basic wardrobe with overall dimension labels', async ({ page }) => {
+    await expect.poll(() => paintedRatio(page)).toBeGreaterThan(0.05);
+    await expect(page.getByText('W 200.0 cm', { exact: true })).toBeVisible();
+    await expect(page.getByText('H 240.0 cm', { exact: true })).toBeVisible();
+    await expect(page.getByText('D 60.0 cm', { exact: true })).toBeVisible();
+  });
+
+  test('orbit drag rotates the camera', async ({ page }) => {
+    const before = await page.evaluate(() => window.__banai.viewer.camera.position.toArray());
+    const box = await page.locator('#viewer canvas').boundingBox();
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2 + 200, box.y + box.height / 2 + 40, { steps: 10 });
+    await page.mouse.up();
+    const after = await page.evaluate(() => window.__banai.viewer.camera.position.toArray());
+    expect(after).not.toEqual(before);
+  });
+
+  test('doors are shown by default and "Show interior" hides them', async ({ page }) => {
+    expect(await page.evaluate(() => Boolean(window.__banai.viewer.meshOf('dr_left')))).toBe(true);
+    await page.getByLabel('Show interior').check();
+    await expect.poll(() => page.evaluate(() => Boolean(window.__banai.viewer.meshOf('dr_left')))).toBe(false);
+  });
+
+  test('clicking a shelf selects it, highlights it and shows its dimensions', async ({ page }) => {
+    await page.getByLabel('Show interior').check();
+    await clickComponent(page, 'shf_l2');
+    expect(await selection(page)).toEqual({ id: 'shf_l2', kind: 'shelf' });
+    await expect(page.locator('#selection-readout')).toHaveText('Shelf · 80.0 cm from base · 1.8 cm thick');
+    await expect(page.locator('.dim-label--selected')).toHaveText('Shelf · 80.0 cm from base · 1.8 cm thick');
+  });
+
+  test('clicking a door selects the door; clicking empty space clears the selection', async ({ page }) => {
+    await clickComponent(page, 'dr_middle');
+    expect(await selection(page)).toEqual({ id: 'dr_middle', kind: 'door' });
+    const box = await page.locator('#viewer canvas').boundingBox();
+    await page.mouse.click(box.x + 10, box.y + 10);
+    expect(await selection(page)).toBeNull();
+  });
+
+  test('the view updates automatically when the committed state changes', async ({ page }) => {
+    const y0 = await page.evaluate(() => window.__banai.viewer.meshOf('shf_l1').position.y);
+    const result = await page.evaluate(() => window.__banai.store.dispatch([{ op: 'modify_shelf', id: 'shf_l1', y: 1000 }]));
+    expect(result.ok).toBe(true);
+    await expect.poll(() => page.evaluate(() => window.__banai.viewer.meshOf('shf_l1').position.y)).toBeGreaterThan(y0 + 0.5);
+  });
+});
