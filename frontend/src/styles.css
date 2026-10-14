@@ -1,0 +1,30 @@
+:root {
+  --bg: #f4f3f0;
+  --panel-bg: #ffffff;
+  --border: #e2e0db;
+  --text: #1f1f1f;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: 340px 1fr 340px;
+  height: 100vh;
+}
+
+.panel {
+  background: var(--panel-bg);
+  border-inline: 1px solid var(--border);
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.viewer { position: relative; min-width: 0; }
