@@ -31,6 +31,24 @@ main.js (boot) ── api/client.js ──► GET /api/catalog, /api/designs/def
 
 Coordinates: x = 0 at the outer left face, y = 0 at the floor, front face at z = 0, back at z = −depth. Doors sit in front (z > 0). Sliding doors use two depth tracks.
 
+## Properties editor (`src/editor/`)
+
+| Module | Role |
+|---|---|
+| `opsFromForm.js` | **Pure** form-to-ops mapping (unit-tested): cm text → integer mm (`parseCm`), door, material, hinge, add-item and add-compartment ops, and `friendlyError` (fixed messages that never echo input). |
+| `fields.js` | DOM builders (`el`, `cmField`, `segmented`, `selectField`, `button`). Text goes only through `textContent` / `.value`. |
+| `panel.js` | Re-renders from store state (only when the design or selection changed). The selected-component section comes first, then Wardrobe, Materials and Compartments. |
+| `*Section.js`, `appearanceControls.js` | Section content per component kind. Catalog swatches and custom colours are visibly distinct ("Custom: name"). |
+
+Editing rules:
+- Inputs commit on **change or Enter**, never on every keystroke.
+- An invalid number shows an inline message and nothing is dispatched.
+- A rejected op (`DomainError`) shows a friendly inline message, and the state is unchanged.
+- Buttons and selects report errors under their section.
+- No LLM is involved in manual editing.
+
+The visual design follows the Stitch design system documented in `/.stitch/DESIGN.md`.
+
 ## Testing
 - **Unit:** `npm test` (vitest). This covers the domain engine and parity fixtures, the store, the API client, and the builders.
 - **E2E:** `npm run test:e2e` (Playwright, Chromium with SwiftShader WebGL). It starts uvicorn on :8010 and Vite on :5183. `window.__banai` exists only in dev builds (`import.meta.env.DEV`) and is stripped from production bundles.

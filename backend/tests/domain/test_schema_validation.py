@@ -125,3 +125,13 @@ def test_all_errors_are_reported_in_order(two, catalog):
 def test_domain_error_to_dict():
     error = DomainError("NOT_FOUND", "ops[0].id", "missing")
     assert error.to_dict() == {"code": "NOT_FOUND", "path": "ops[0].id", "message": "missing"}
+
+
+def test_catalog_entries_are_safe_text():
+    """L2 (Phase 4 review): catalog names obey the same safe-text rules as custom names."""
+    from app.domain.catalog import load_catalog
+    from app.domain.schema import CustomRef
+
+    for section in load_catalog().values():
+        for entry in section:
+            CustomRef.model_validate({"custom": True, "name": entry["name"]})
