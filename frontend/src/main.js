@@ -1,6 +1,9 @@
+import '@fontsource/inter/400.css';
+import '@fontsource/inter/500.css';
+import '@fontsource/inter/600.css';
 import { getCatalog, getDefaultDesign } from './api/client.js';
 import { createStore } from './state/store.js';
-import { describeSelection } from './viewer/format.js';
+import { mountPanel } from './editor/panel.js';
 import { createViewer } from './viewer/viewer.js';
 
 function showError(message) {
@@ -13,15 +16,6 @@ function bindInteriorToggle(store) {
   const toggle = document.getElementById('toggle-interior');
   toggle.addEventListener('change', () => store.setDoorsVisible(!toggle.checked));
   store.subscribe((state) => { toggle.checked = !state.ui.doorsVisible; });
-}
-
-function bindSelectionReadout(store) {
-  const readout = document.getElementById('selection-readout');
-  const render = ({ design, selection }) => {
-    readout.textContent = selection ? describeSelection(design, selection) : 'Click a component in the 3D view.';
-  };
-  store.subscribe(render);
-  render(store.getState());
 }
 
 async function boot() {
@@ -37,7 +31,7 @@ async function boot() {
   const store = createStore({ design: initial.design, revision: initial.revision, catalog });
   const viewer = createViewer(document.getElementById('viewer'), store);
   bindInteriorToggle(store);
-  bindSelectionReadout(store);
+  mountPanel(document.getElementById('properties-content'), store);
   if (import.meta.env.DEV) {
     window.__banai = Object.freeze({ store, viewer });
   }

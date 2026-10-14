@@ -19,8 +19,10 @@ export const MAX_ITEMS_TOTAL = 300; // shelves + drawers + rails across the whol
 export const SAFE_TEXT_PATTERN = /^[^\x00-\x1f\x7f-\x9f\u200b-\u200d\u2028\u2029\u202a-\u202e\u2066-\u2069\ufeff]+$/;
 // Not blank, well-formed UTF-16 (no lone surrogates, which Python rejects), no Unicode tag
 // characters (invisible text usable for prompt injection). Mirrors CustomRef._visible_name.
-const isVisibleText = (value) =>
-  value.isWellFormed() && value.trim().length > 0 && !/[\u{E0000}-\u{E007F}]/u.test(value);
+const LONE_SURROGATE = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+const isWellFormed = (value) => (typeof value.isWellFormed === 'function' ? value.isWellFormed() : !LONE_SURROGATE.test(value));
+export const isVisibleText = (value) =>
+  isWellFormed(value) && value.trim().length > 0 && !/[\u{E0000}-\u{E007F}]/u.test(value);
 // Unknown keys are only named in an error path when they are plain identifiers.
 const SAFE_KEY_PATTERN = /^[A-Za-z][A-Za-z0-9_]{0,39}$/;
 

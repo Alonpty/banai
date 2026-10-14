@@ -31,7 +31,7 @@ test.describe('Phase 3: 3D viewer', () => {
     await page.getByLabel('Show interior').check();
     await clickComponent(page, 'shf_l2');
     expect(await selection(page)).toEqual({ id: 'shf_l2', kind: 'shelf' });
-    await expect(page.locator('#selection-readout')).toHaveText('Shelf · 80.0 cm from base · 1.8 cm thick');
+    await expect(page.getByTestId('selected-section')).toContainText('Selected · Shelf');
     await expect(page.locator('.dim-label--selected')).toHaveText('Shelf · 80.0 cm from base · 1.8 cm thick');
   });
 
