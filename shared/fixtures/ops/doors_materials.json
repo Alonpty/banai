@@ -1,0 +1,98 @@
+[
+  {
+    "name": "configure sliding doors",
+    "base": "two",
+    "ops": [{ "op": "configure_doors", "type": "sliding", "count": 2, "ids": ["dr_s1", "dr_s2"] }],
+    "expect": { "match": { "doors": { "type": "sliding", "items": [
+      { "id": "dr_s1", "compartmentIds": [], "hingeSide": null, "appearance": null },
+      { "id": "dr_s2", "compartmentIds": [], "hingeSide": null, "appearance": null }
+    ] } } }
+  },
+  {
+    "name": "configure hinged doors defaults to one per compartment, alternating hinges",
+    "base": "two",
+    "ops": [{ "op": "configure_doors", "type": "hinged", "ids": ["dr_x", "dr_y"] }],
+    "expect": { "match": { "doors": { "type": "hinged", "items": [
+      { "id": "dr_x", "compartmentIds": ["cmp_a"], "hingeSide": "left" },
+      { "id": "dr_y", "compartmentIds": ["cmp_b"], "hingeSide": "right" }
+    ] } } }
+  },
+  {
+    "name": "a compartment covered by two hinged doors is invalid",
+    "base": "two",
+    "ops": [{ "op": "configure_doors", "type": "hinged", "doors": [
+      { "id": "dr_1", "compartmentIds": ["cmp_a"], "hingeSide": "left" },
+      { "id": "dr_2", "compartmentIds": ["cmp_a", "cmp_b"], "hingeSide": "right" }
+    ] }],
+    "expect": { "error": { "code": "DOOR_INVALID", "path": "doors.items[1].compartmentIds" } }
+  },
+  {
+    "name": "sliding door count out of range",
+    "base": "two",
+    "ops": [{ "op": "configure_doors", "type": "sliding", "count": 9 }],
+    "expect": { "error": { "code": "OUT_OF_RANGE", "path": "ops[0].count" } }
+  },
+  {
+    "name": "configure no doors",
+    "base": "two",
+    "ops": [{ "op": "configure_doors", "type": "none" }],
+    "expect": { "match": { "doors": { "type": "none", "items": [] } } }
+  },
+  {
+    "name": "removing the last door switches type to none",
+    "base": "two",
+    "ops": [{ "op": "remove_component", "id": "dr_a" }, { "op": "remove_component", "id": "dr_b" }],
+    "expect": { "match": { "doors": { "type": "none", "items": [] } } }
+  },
+  {
+    "name": "set a custom carcass colour",
+    "base": "two",
+    "ops": [{ "op": "set_material", "target": "carcass", "color": { "custom": true, "name": "Sage green", "hex": "#9caf88" } }],
+    "expect": { "match": { "carcass": { "appearance": {
+      "material": { "catalogId": "melamine" },
+      "color": { "custom": true, "name": "Sage green", "hex": "#9caf88" },
+      "finish": { "catalogId": "matte" }
+    } } } }
+  },
+  {
+    "name": "unknown catalog colour",
+    "base": "two",
+    "ops": [{ "op": "set_material", "target": "carcass", "color": { "catalogId": "pink" } }],
+    "expect": { "error": { "code": "UNKNOWN_CATALOG_ID", "path": "carcass.appearance.color" } }
+  },
+  {
+    "name": "shelf override inherits the carcass appearance",
+    "base": "two",
+    "ops": [{ "op": "set_material", "target": "shf_1", "finish": { "catalogId": "gloss" } }],
+    "expect": { "match": { "compartments": [{ "shelves": [{ "appearance": {
+      "material": { "catalogId": "melamine" }, "color": { "catalogId": "white" }, "finish": { "catalogId": "gloss" }
+    } }] }, {}] } }
+  },
+  {
+    "name": "custom material without hex gets hex null",
+    "base": "two",
+    "ops": [{ "op": "set_material", "target": "doors", "material": { "custom": true, "name": "Rattan panels" } }],
+    "expect": { "match": { "doors": { "appearance": { "material": { "custom": true, "name": "Rattan panels", "hex": null } } } } }
+  },
+  {
+    "name": "clear a door override",
+    "base": "two",
+    "ops": [
+      { "op": "set_material", "target": "dr_a", "color": { "catalogId": "walnut" } },
+      { "op": "set_material", "target": "dr_a", "clear": true }
+    ],
+    "expect": { "match": { "doors": { "items": [{ "id": "dr_a", "appearance": null }, {}] } } }
+  },
+  {
+    "name": "rails have no appearance",
+    "base": "two",
+    "ops": [{ "op": "set_material", "target": "rail_1", "color": { "catalogId": "black" } }],
+    "expect": { "error": { "code": "INVALID_OP", "path": "ops[0].target" } }
+  },
+  {
+    "name": "set_material needs at least one field",
+    "base": "two",
+    "ops": [{ "op": "set_material", "target": "carcass" }],
+    "expect": { "error": { "code": "INVALID_OP", "path": "ops[0]" } }
+  }
+]

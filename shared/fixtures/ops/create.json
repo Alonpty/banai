@@ -1,0 +1,72 @@
+[
+  {
+    "name": "create_wardrobe splits interior width equally",
+    "base": null,
+    "ops": [{ "op": "create_wardrobe", "width": 2000, "height": 2400, "depth": 600, "compartmentCount": 3,
+              "compartmentIds": ["cmp_1", "cmp_2", "cmp_3"], "partitionIds": ["prt_1", "prt_2"] }],
+    "expect": { "match": {
+      "dimensions": { "width": 2000, "height": 2400, "depth": 600 },
+      "carcass": { "panelThickness": 18 },
+      "compartments": [{ "id": "cmp_1", "width": 643 }, { "id": "cmp_2", "width": 643 }, { "id": "cmp_3", "width": 642 }],
+      "partitions": [{ "id": "prt_1", "thickness": 18 }, { "id": "prt_2", "thickness": 18 }],
+      "doors": { "type": "none", "items": [] }
+    } }
+  },
+  {
+    "name": "create_wardrobe gives the integer remainder to the leftmost compartments",
+    "base": null,
+    "ops": [{ "op": "create_wardrobe", "width": 1000, "height": 2000, "depth": 500, "compartmentCount": 3, "panelThickness": 20,
+              "compartmentIds": ["cmp_1", "cmp_2", "cmp_3"], "partitionIds": ["prt_1", "prt_2"] }],
+    "expect": { "match": { "compartments": [{ "width": 307 }, { "width": 307 }, { "width": 306 }] } }
+  },
+  {
+    "name": "create_wardrobe rejects compartments narrower than the minimum",
+    "base": null,
+    "ops": [{ "op": "create_wardrobe", "width": 300, "height": 2000, "depth": 500, "compartmentCount": 20 }],
+    "expect": { "error": { "code": "OUT_OF_RANGE", "path": "ops[0].compartmentCount" } }
+  },
+  {
+    "name": "create_wardrobe rejects a mismatched id list",
+    "base": null,
+    "ops": [{ "op": "create_wardrobe", "width": 2000, "height": 2400, "depth": 600, "compartmentCount": 2, "compartmentIds": ["cmp_1"] }],
+    "expect": { "error": { "code": "INVALID_OP", "path": "ops[0].compartmentIds" } }
+  },
+  {
+    "name": "ops other than create_wardrobe need an existing design",
+    "base": null,
+    "ops": [{ "op": "add_shelf", "compartmentId": "cmp_a", "y": 100 }],
+    "expect": { "error": { "code": "INVALID_OP", "path": "ops[0]" } }
+  },
+  {
+    "name": "unknown op type is a schema error",
+    "base": "two",
+    "ops": [{ "op": "explode" }],
+    "expect": { "error": { "code": "SCHEMA_INVALID" } }
+  },
+  {
+    "name": "spec example: 240x260 white, shelves left, hanging middle, drawers right",
+    "base": null,
+    "ops": [
+      { "op": "create_wardrobe", "width": 2400, "height": 2600, "depth": 600, "compartmentCount": 3,
+        "compartmentIds": ["cmp_l", "cmp_m", "cmp_r"], "partitionIds": ["prt_1", "prt_2"] },
+      { "op": "add_shelf", "compartmentId": "cmp_l", "y": 500, "id": "shf_1" },
+      { "op": "add_shelf", "compartmentId": "cmp_l", "y": 1000, "id": "shf_2" },
+      { "op": "add_shelf", "compartmentId": "cmp_l", "y": 1500, "id": "shf_3" },
+      { "op": "add_shelf", "compartmentId": "cmp_l", "y": 2000, "id": "shf_4" },
+      { "op": "add_rail", "compartmentId": "cmp_m", "y": 2300, "id": "rail_1" },
+      { "op": "add_drawer", "compartmentId": "cmp_r", "y": 0, "height": 250, "id": "drw_1" },
+      { "op": "add_drawer", "compartmentId": "cmp_r", "y": 250, "height": 250, "id": "drw_2" },
+      { "op": "add_drawer", "compartmentId": "cmp_r", "y": 500, "height": 250, "id": "drw_3" },
+      { "op": "configure_doors", "type": "hinged", "ids": ["dr_1", "dr_2", "dr_3"] }
+    ],
+    "expect": { "match": {
+      "dimensions": { "width": 2400, "height": 2600, "depth": 600 },
+      "compartments": [
+        { "id": "cmp_l", "width": 776, "shelves": [{}, {}, {}, {}] },
+        { "id": "cmp_m", "width": 776, "rails": [{ "y": 2300 }] },
+        { "id": "cmp_r", "width": 776, "drawers": [{}, {}, {}] }
+      ],
+      "doors": { "type": "hinged", "items": [{ "hingeSide": "left" }, { "hingeSide": "right" }, { "hingeSide": "left" }] }
+    } }
+  }
+]

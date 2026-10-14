@@ -1,0 +1,102 @@
+[
+  {
+    "name": "whitespace-only custom name",
+    "base": "two",
+    "ops": [
+      {
+        "op": "set_material",
+        "target": "carcass",
+        "color": {
+          "custom": true,
+          "name": "   "
+        }
+      }
+    ],
+    "expect": {
+      "error": {
+        "code": "SCHEMA_INVALID",
+        "path": "ops[0]"
+      }
+    }
+  },
+  {
+    "name": "zero-width custom name",
+    "base": "two",
+    "ops": [
+      {
+        "op": "set_material",
+        "target": "carcass",
+        "color": {
+          "custom": true,
+          "name": "a\u200bb"
+        }
+      }
+    ],
+    "expect": {
+      "error": {
+        "code": "SCHEMA_INVALID",
+        "path": "ops[0]"
+      }
+    }
+  },
+  {
+    "name": "line-separator in custom name",
+    "base": "two",
+    "ops": [
+      {
+        "op": "set_material",
+        "target": "carcass",
+        "color": {
+          "custom": true,
+          "name": "a\u2028b"
+        }
+      }
+    ],
+    "expect": {
+      "error": {
+        "code": "SCHEMA_INVALID",
+        "path": "ops[0]"
+      }
+    }
+  },
+  {
+    "name": "Unicode tag characters in custom name",
+    "base": "two",
+    "ops": [
+      {
+        "op": "set_material",
+        "target": "carcass",
+        "color": {
+          "custom": true,
+          "name": "a\udb40\udc41b"
+        }
+      }
+    ],
+    "expect": {
+      "error": {
+        "code": "SCHEMA_INVALID",
+        "path": "ops[0]"
+      }
+    }
+  },
+  {
+    "name": "lone surrogate in custom name",
+    "base": "two",
+    "ops": [
+      {
+        "op": "set_material",
+        "target": "carcass",
+        "color": {
+          "custom": true,
+          "name": "a\ud800b"
+        }
+      }
+    ],
+    "expect": {
+      "error": {
+        "code": "SCHEMA_INVALID",
+        "path": "ops[0]"
+      }
+    }
+  }
+]

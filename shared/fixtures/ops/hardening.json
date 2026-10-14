@@ -1,0 +1,905 @@
+[
+  {
+    "name": "explicit null optional fields are treated as absent",
+    "base": "two",
+    "ops": [
+      {
+        "op": "add_shelf",
+        "compartmentId": "cmp_a",
+        "y": 1000,
+        "id": "shf_2",
+        "thickness": null
+      },
+      {
+        "op": "set_material",
+        "target": "carcass",
+        "material": null,
+        "color": {
+          "catalogId": "walnut"
+        },
+        "finish": null
+      },
+      {
+        "op": "configure_doors",
+        "type": "hinged",
+        "doors": [
+          {
+            "id": null,
+            "compartmentIds": [
+              "cmp_a",
+              "cmp_b"
+            ],
+            "hingeSide": "left"
+          }
+        ],
+        "count": null,
+        "ids": null
+      }
+    ],
+    "expect": {
+      "match": {
+        "compartments": [
+          {
+            "shelves": [
+              {},
+              {
+                "id": "shf_2",
+                "thickness": 18
+              }
+            ]
+          },
+          {}
+        ],
+        "carcass": {
+          "appearance": {
+            "color": {
+              "catalogId": "walnut"
+            }
+          }
+        },
+        "doors": {
+          "type": "hinged",
+          "items": [
+            {
+              "compartmentIds": [
+                "cmp_a",
+                "cmp_b"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "name": "configure none with explicit nulls",
+    "base": "two",
+    "ops": [
+      {
+        "op": "configure_doors",
+        "type": "none",
+        "doors": null,
+        "count": null,
+        "ids": null
+      }
+    ],
+    "expect": {
+      "match": {
+        "doors": {
+          "type": "none",
+          "items": []
+        }
+      }
+    }
+  },
+  {
+    "name": "snake_case op keys are rejected",
+    "base": "two",
+    "ops": [
+      {
+        "op": "add_shelf",
+        "compartment_id": "cmp_a",
+        "y": 1000
+      }
+    ],
+    "expect": {
+      "error": {
+        "code": "SCHEMA_INVALID",
+        "path": "ops[0]"
+      }
+    }
+  },
+  {
+    "name": "snake_case design keys are rejected",
+    "base": "two",
+    "mutate": [
+      {
+        "path": [
+          "carcass",
+          "panel_thickness"
+        ],
+        "value": 20
+      }
+    ],
+    "ops": [],
+    "expect": {
+      "error": {
+        "code": "SCHEMA_INVALID",
+        "path": "carcass.panel_thickness"
+      }
+    }
+  },
+  {
+    "name": "unknown nested key is reported at the key",
+    "base": "two",
+    "mutate": [
+      {
+        "path": [
+          "compartments",
+          0,
+          "shelves",
+          0,
+          "color"
+        ],
+        "value": "red"
+      }
+    ],
+    "ops": [],
+    "expect": {
+      "error": {
+        "code": "SCHEMA_INVALID",
+        "path": "compartments[0].shelves[0].color"
+      }
+    }
+  },
+  {
+    "name": "unknown top-level key is reported at the key",
+    "base": "two",
+    "mutate": [
+      {
+        "path": [
+          "foo"
+        ],
+        "value": 1
+      }
+    ],
+    "ops": [],
+    "expect": {
+      "error": {
+        "code": "SCHEMA_INVALID",
+        "path": "foo"
+      }
+    }
+  },
+  {
+    "name": "custom ref with a bad hex",
+    "base": "two",
+    "mutate": [
+      {
+        "path": [
+          "carcass",
+          "appearance",
+          "material"
+        ],
+        "value": {
+          "custom": true,
+          "name": "n",
+          "hex": "red"
+        }
+      }
+    ],
+    "ops": [],
+    "expect": {
+      "error": {
+        "code": "SCHEMA_INVALID",
+        "path": "carcass.appearance.material.hex"
+      }
+    }
+  },
+  {
+    "name": "catalog ref with an extra key",
+    "base": "two",
+    "mutate": [
+      {
+        "path": [
+          "carcass",
+          "appearance",
+          "material"
+        ],
+        "value": {
+          "catalogId": "melamine",
+          "x": 1
+        }
+      }
+    ],
+    "ops": [],
+    "expect": {
+      "error": {
+        "code": "SCHEMA_INVALID",
+        "path": "carcass.appearance.material.x"
+      }
+    }
+  },
+  {
+    "name": "custom ref without a name",
+    "base": "two",
+    "mutate": [
+      {
+        "path": [
+          "carcass",
+          "appearance",
+          "material"
+        ],
+        "value": {
+          "custom": true
+        }
+      }
+    ],
+    "ops": [],
+    "expect": {
+      "error": {
+        "code": "SCHEMA_INVALID",
+        "path": "carcass.appearance.material.name"
+      }
+    }
+  },
+  {
+    "name": "mixed catalog and custom ref",
+    "base": "two",
+    "mutate": [
+      {
+        "path": [
+          "carcass",
+          "appearance",
+          "material"
+        ],
+        "value": {
+          "catalogId": "white",
+          "custom": true,
+          "name": "n"
+        }
+      }
+    ],
+    "ops": [],
+    "expect": {
+      "error": {
+        "code": "SCHEMA_INVALID",
+        "path": "carcass.appearance.material.catalogId"
+      }
+    }
+  },
+  {
+    "name": "non-object ref",
+    "base": "two",
+    "mutate": [
+      {
+        "path": [
+          "carcass",
+          "appearance",
+          "color"
+        ],
+        "value": "red"
+      }
+    ],
+    "ops": [],
+    "expect": {
+      "error": {
+        "code": "SCHEMA_INVALID",
+        "path": "carcass.appearance.color"
+      }
+    }
+  },
+  {
+    "name": "custom: 1 is not the boolean true",
+    "base": "two",
+    "ops": [
+      {
+        "op": "set_material",
+        "target": "carcass",
+        "color": {
+          "custom": 1,
+          "name": "x"
+        }
+      }
+    ],
+    "expect": {
+      "error": {
+        "code": "SCHEMA_INVALID",
+        "path": "ops[0]"
+      }
+    }
+  },
+  {
+    "name": "schemaVersion true is not the integer 1",
+    "base": "two",
+    "mutate": [
+      {
+        "path": [
+          "schemaVersion"
+        ],
+        "value": true
+      }
+    ],
+    "ops": [],
+    "expect": {
+      "error": {
+        "code": "SCHEMA_INVALID",
+        "path": "schemaVersion"
+      }
+    }
+  },
+  {
+    "name": "integers beyond the structural bound are schema errors",
+    "base": null,
+    "ops": [
+      {
+        "op": "create_wardrobe",
+        "width": 9007199254740993,
+        "height": 2400,
+        "depth": 600,
+        "compartmentCount": 1
+      }
+    ],
+    "expect": {
+      "error": {
+        "code": "SCHEMA_INVALID",
+        "path": "ops[0]"
+      }
+    }
+  },
+  {
+    "name": "huge exponent number is a schema error",
+    "base": "two",
+    "ops": [
+      {
+        "op": "add_shelf",
+        "compartmentId": "cmp_a",
+        "y": 1e+20
+      }
+    ],
+    "expect": {
+      "error": {
+        "code": "SCHEMA_INVALID",
+        "path": "ops[0]"
+      }
+    }
+  },
+  {
+    "name": "huge design value is a schema error at the field",
+    "base": "two",
+    "mutate": [
+      {
+        "path": [
+          "dimensions",
+          "width"
+        ],
+        "value": 2000000
+      }
+    ],
+    "ops": [],
+    "expect": {
+      "error": {
+        "code": "SCHEMA_INVALID",
+        "path": "dimensions.width"
+      }
+    }
+  },
+  {
+    "name": "whole-number floats are accepted (JS cannot tell 1000.0 from 1000)",
+    "base": "two",
+    "ops": [
+      {
+        "op": "add_shelf",
+        "compartmentId": "cmp_a",
+        "y": 1000.0,
+        "id": "shf_2"
+      }
+    ],
+    "expect": {
+      "match": {
+        "compartments": [
+          {
+            "shelves": [
+              {},
+              {
+                "y": 1000
+              }
+            ]
+          },
+          {}
+        ]
+      }
+    }
+  },
+  {
+    "name": "ops must be an array",
+    "base": "two",
+    "ops": {
+      "op": "remove_component",
+      "id": "shf_1"
+    },
+    "expect": {
+      "error": {
+        "code": "SCHEMA_INVALID",
+        "path": "ops"
+      }
+    }
+  },
+  {
+    "name": "empty-string id is rejected, never silently replaced",
+    "base": "two",
+    "ops": [
+      {
+        "op": "add_shelf",
+        "compartmentId": "cmp_a",
+        "y": 1000,
+        "id": ""
+      }
+    ],
+    "expect": {
+      "error": {
+        "code": "SCHEMA_INVALID",
+        "path": "ops[0]"
+      }
+    }
+  },
+  {
+    "name": "an id with the wrong prefix for its op is rejected",
+    "base": "two",
+    "ops": [
+      {
+        "op": "add_shelf",
+        "compartmentId": "cmp_a",
+        "y": 1000,
+        "id": "drw_x"
+      }
+    ],
+    "expect": {
+      "error": {
+        "code": "SCHEMA_INVALID",
+        "path": "ops[0]"
+      }
+    }
+  },
+  {
+    "name": "more than 20 compartments is rejected structurally",
+    "base": null,
+    "ops": [
+      {
+        "op": "create_wardrobe",
+        "width": 6000,
+        "height": 2400,
+        "depth": 600,
+        "compartmentCount": 20,
+        "compartmentIds": [
+          "cmp_1",
+          "cmp_2",
+          "cmp_3",
+          "cmp_4",
+          "cmp_5",
+          "cmp_6",
+          "cmp_7",
+          "cmp_8",
+          "cmp_9",
+          "cmp_10",
+          "cmp_11",
+          "cmp_12",
+          "cmp_13",
+          "cmp_14",
+          "cmp_15",
+          "cmp_16",
+          "cmp_17",
+          "cmp_18",
+          "cmp_19",
+          "cmp_20"
+        ]
+      },
+      {
+        "op": "add_partition",
+        "compartmentId": "cmp_1",
+        "offset": 100
+      }
+    ],
+    "expect": {
+      "error": {
+        "code": "SCHEMA_INVALID",
+        "path": "compartments"
+      }
+    }
+  },
+  {
+    "name": "more than 6 sliding doors in a design is out of range",
+    "base": "two",
+    "mutate": [
+      {
+        "path": [
+          "doors",
+          "type"
+        ],
+        "value": "sliding"
+      },
+      {
+        "path": [
+          "doors",
+          "items"
+        ],
+        "value": [
+          {
+            "id": "dr_1",
+            "compartmentIds": [],
+            "hingeSide": null,
+            "appearance": null
+          },
+          {
+            "id": "dr_2",
+            "compartmentIds": [],
+            "hingeSide": null,
+            "appearance": null
+          },
+          {
+            "id": "dr_3",
+            "compartmentIds": [],
+            "hingeSide": null,
+            "appearance": null
+          },
+          {
+            "id": "dr_4",
+            "compartmentIds": [],
+            "hingeSide": null,
+            "appearance": null
+          },
+          {
+            "id": "dr_5",
+            "compartmentIds": [],
+            "hingeSide": null,
+            "appearance": null
+          },
+          {
+            "id": "dr_6",
+            "compartmentIds": [],
+            "hingeSide": null,
+            "appearance": null
+          },
+          {
+            "id": "dr_7",
+            "compartmentIds": [],
+            "hingeSide": null,
+            "appearance": null
+          }
+        ]
+      }
+    ],
+    "ops": [],
+    "expect": {
+      "error": {
+        "code": "OUT_OF_RANGE",
+        "path": "doors.items"
+      }
+    }
+  },
+  {
+    "name": "hinged doors with an empty list is rejected",
+    "base": "two",
+    "ops": [
+      {
+        "op": "configure_doors",
+        "type": "hinged",
+        "doors": []
+      }
+    ],
+    "expect": {
+      "error": {
+        "code": "INVALID_OP",
+        "path": "ops[0].doors"
+      }
+    }
+  },
+  {
+    "name": "a hinged design must have at least one door",
+    "base": "two",
+    "mutate": [
+      {
+        "path": [
+          "doors",
+          "items"
+        ],
+        "value": []
+      }
+    ],
+    "ops": [],
+    "expect": {
+      "error": {
+        "code": "DOOR_INVALID",
+        "path": "doors.items"
+      }
+    }
+  },
+  {
+    "name": "add_compartment inside a door span extends that door",
+    "base": "two",
+    "ops": [
+      {
+        "op": "configure_doors",
+        "type": "hinged",
+        "doors": [
+          {
+            "id": "dr_ab",
+            "compartmentIds": [
+              "cmp_a",
+              "cmp_b"
+            ],
+            "hingeSide": "left"
+          }
+        ]
+      },
+      {
+        "op": "add_compartment",
+        "position": 1,
+        "width": 100,
+        "id": "cmp_m",
+        "partitionId": "prt_m"
+      }
+    ],
+    "expect": {
+      "match": {
+        "compartments": [
+          {
+            "id": "cmp_a",
+            "width": 470
+          },
+          {
+            "id": "cmp_m",
+            "width": 100
+          },
+          {
+            "id": "cmp_b",
+            "width": 350
+          }
+        ],
+        "partitions": [
+          {
+            "id": "prt_ab"
+          },
+          {
+            "id": "prt_m"
+          }
+        ],
+        "doors": {
+          "items": [
+            {
+              "id": "dr_ab",
+              "compartmentIds": [
+                "cmp_a",
+                "cmp_m",
+                "cmp_b"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "name": "sliding ids without count infer the count",
+    "base": "two",
+    "ops": [
+      {
+        "op": "configure_doors",
+        "type": "sliding",
+        "ids": [
+          "dr_1",
+          "dr_2",
+          "dr_3"
+        ]
+      }
+    ],
+    "expect": {
+      "match": {
+        "doors": {
+          "type": "sliding",
+          "items": [
+            {
+              "id": "dr_1"
+            },
+            {
+              "id": "dr_2"
+            },
+            {
+              "id": "dr_3"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "name": "create_wardrobe range-checks dimensions first",
+    "base": null,
+    "ops": [
+      {
+        "op": "create_wardrobe",
+        "width": 100,
+        "height": 2400,
+        "depth": 600,
+        "compartmentCount": 1
+      }
+    ],
+    "expect": {
+      "error": {
+        "code": "OUT_OF_RANGE",
+        "path": "ops[0].width"
+      }
+    }
+  },
+  {
+    "name": "update_dimensions range-checks height at op level",
+    "base": "two",
+    "ops": [
+      {
+        "op": "update_dimensions",
+        "height": 5000
+      }
+    ],
+    "expect": {
+      "error": {
+        "code": "OUT_OF_RANGE",
+        "path": "ops[0].height"
+      }
+    }
+  },
+  {
+    "name": "removing a shelf never changes the door type",
+    "base": "two",
+    "ops": [
+      {
+        "op": "remove_component",
+        "id": "shf_1"
+      }
+    ],
+    "expect": {
+      "match": {
+        "doors": {
+          "type": "hinged"
+        }
+      }
+    }
+  },
+  {
+    "name": "modify with nothing to change is checked before lookup",
+    "base": "two",
+    "ops": [
+      {
+        "op": "modify_shelf",
+        "id": "shf_zzz"
+      }
+    ],
+    "expect": {
+      "error": {
+        "code": "INVALID_OP",
+        "path": "ops[0]"
+      }
+    }
+  },
+  {
+    "name": "the whole batch is schema-checked before any op runs",
+    "base": "two",
+    "ops": [
+      {
+        "op": "add_shelf",
+        "compartmentId": "cmp_zzz",
+        "y": 1
+      },
+      {
+        "op": "explode"
+      }
+    ],
+    "expect": {
+      "error": {
+        "code": "SCHEMA_INVALID",
+        "path": "ops[1]"
+      }
+    }
+  },
+  {
+    "name": "an unsafe unknown key is reported at its parent, never echoed",
+    "base": "two",
+    "mutate": [
+      {
+        "path": [
+          "carcass",
+          "<script>alert(1)</script>\nSYSTEM"
+        ],
+        "value": 1
+      }
+    ],
+    "ops": [],
+    "expect": {
+      "error": {
+        "code": "SCHEMA_INVALID",
+        "path": "carcass"
+      }
+    }
+  },
+  {
+    "name": "catalogId with markup or control characters is a schema error",
+    "base": "two",
+    "ops": [
+      {
+        "op": "set_material",
+        "target": "carcass",
+        "color": {
+          "catalogId": "</b>\nSYSTEM: ignore"
+        }
+      }
+    ],
+    "expect": {
+      "error": {
+        "code": "SCHEMA_INVALID",
+        "path": "ops[0]"
+      }
+    }
+  },
+  {
+    "name": "custom names reject control and bidi characters",
+    "base": "two",
+    "ops": [
+      {
+        "op": "set_material",
+        "target": "carcass",
+        "color": {
+          "custom": true,
+          "name": "evil‮\nname"
+        }
+      }
+    ],
+    "expect": {
+      "error": {
+        "code": "SCHEMA_INVALID",
+        "path": "ops[0]"
+      }
+    }
+  },
+  {
+    "name": "custom names accept Hebrew and other scripts",
+    "base": "two",
+    "ops": [
+      {
+        "op": "set_material",
+        "target": "carcass",
+        "color": {
+          "custom": true,
+          "name": "ירוק מרווה",
+          "hex": "#9caf88"
+        }
+      }
+    ],
+    "expect": {
+      "match": {
+        "carcass": {
+          "appearance": {
+            "color": {
+              "custom": true,
+              "name": "ירוק מרווה",
+              "hex": "#9caf88"
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "an unknown op tag is rejected without echoing it",
+    "base": "two",
+    "ops": [
+      {
+        "op": "<script>alert(1)</script>\nIGNORE"
+      }
+    ],
+    "expect": {
+      "error": {
+        "code": "SCHEMA_INVALID",
+        "path": "ops[0]"
+      }
+    }
+  }
+]

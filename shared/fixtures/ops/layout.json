@@ -1,0 +1,112 @@
+[
+  {
+    "name": "modify_compartment: right neighbour absorbs the difference",
+    "base": "two",
+    "ops": [{ "op": "modify_compartment", "compartmentId": "cmp_a", "width": 400 }],
+    "expect": { "match": { "compartments": [{ "width": 400 }, { "width": 540 }] } }
+  },
+  {
+    "name": "modify_compartment: last compartment takes from the left neighbour",
+    "base": "two",
+    "ops": [{ "op": "modify_compartment", "compartmentId": "cmp_b", "width": 500 }],
+    "expect": { "match": { "compartments": [{ "width": 440 }, { "width": 500 }] } }
+  },
+  {
+    "name": "modify_compartment leaving the neighbour too narrow",
+    "base": "two",
+    "ops": [{ "op": "modify_compartment", "compartmentId": "cmp_a", "width": 900 }],
+    "expect": { "error": { "code": "OUT_OF_RANGE", "path": "ops[0].width" } }
+  },
+  {
+    "name": "add_compartment at the end takes space from the last compartment",
+    "base": "two",
+    "ops": [{ "op": "add_compartment", "position": 2, "width": 300, "id": "cmp_c", "partitionId": "prt_bc" }],
+    "expect": { "match": {
+      "compartments": [
+        { "id": "cmp_a", "width": 470 },
+        { "id": "cmp_b", "width": 150 },
+        { "id": "cmp_c", "width": 300, "shelves": [], "drawers": [], "rails": [] }
+      ],
+      "partitions": [{ "id": "prt_ab" }, { "id": "prt_bc", "thickness": 20 }]
+    } }
+  },
+  {
+    "name": "add_compartment at the start takes space from the compartment at that position",
+    "base": "two",
+    "ops": [{ "op": "add_compartment", "position": 0, "width": 200, "id": "cmp_z", "partitionId": "prt_z" }],
+    "expect": { "match": {
+      "compartments": [{ "id": "cmp_z", "width": 200 }, { "id": "cmp_a", "width": 250 }, { "id": "cmp_b", "width": 470 }],
+      "partitions": [{ "id": "prt_z" }, { "id": "prt_ab" }]
+    } }
+  },
+  {
+    "name": "add_partition splits a compartment; items stay left, doors extend",
+    "base": "two",
+    "ops": [{ "op": "add_partition", "compartmentId": "cmp_b", "offset": 200, "id": "prt_new", "newCompartmentId": "cmp_new" }],
+    "expect": { "match": {
+      "compartments": [
+        { "id": "cmp_a" },
+        { "id": "cmp_b", "width": 200, "rails": [{ "id": "rail_1" }] },
+        { "id": "cmp_new", "width": 250, "rails": [] }
+      ],
+      "partitions": [{ "id": "prt_ab" }, { "id": "prt_new", "thickness": 20 }],
+      "doors": { "items": [{ "id": "dr_a" }, { "id": "dr_b", "compartmentIds": ["cmp_b", "cmp_new"] }] }
+    } }
+  },
+  {
+    "name": "add_partition too close to the edge",
+    "base": "two",
+    "ops": [{ "op": "add_partition", "compartmentId": "cmp_b", "offset": 20 }],
+    "expect": { "error": { "code": "OUT_OF_RANGE", "path": "ops[0].offset" } }
+  },
+  {
+    "name": "modify_partition moves it; only neighbours change",
+    "base": "two",
+    "ops": [{ "op": "modify_partition", "partitionId": "prt_ab", "position": 500 }],
+    "expect": { "match": { "compartments": [{ "width": 500 }, { "width": 440 }] } }
+  },
+  {
+    "name": "modify_partition thickness takes space from the right neighbour",
+    "base": "two",
+    "ops": [{ "op": "modify_partition", "partitionId": "prt_ab", "thickness": 30 }],
+    "expect": { "match": { "compartments": [{ "width": 470 }, { "width": 460 }], "partitions": [{ "thickness": 30 }] } }
+  },
+  {
+    "name": "remove a shelf",
+    "base": "two",
+    "ops": [{ "op": "remove_component", "id": "shf_1" }],
+    "expect": { "match": { "compartments": [{ "shelves": [] }, {}] } }
+  },
+  {
+    "name": "remove a compartment: right neighbour absorbs it, its door is dropped",
+    "base": "two",
+    "ops": [{ "op": "remove_component", "id": "cmp_a" }],
+    "expect": { "match": {
+      "compartments": [{ "id": "cmp_b", "width": 960 }],
+      "partitions": [],
+      "doors": { "type": "hinged", "items": [{ "id": "dr_b", "compartmentIds": ["cmp_b"] }] }
+    } }
+  },
+  {
+    "name": "remove a partition: compartments merge left and doors merge",
+    "base": "two",
+    "ops": [{ "op": "remove_component", "id": "prt_ab" }],
+    "expect": { "match": {
+      "compartments": [{ "id": "cmp_a", "width": 960, "shelves": [{ "id": "shf_1" }], "drawers": [{ "id": "drw_1" }], "rails": [{ "id": "rail_1" }] }],
+      "partitions": [],
+      "doors": { "items": [{ "id": "dr_a", "compartmentIds": ["cmp_a"] }] }
+    } }
+  },
+  {
+    "name": "the last compartment cannot be removed",
+    "base": "two",
+    "ops": [{ "op": "remove_component", "id": "cmp_a" }, { "op": "remove_component", "id": "cmp_b" }],
+    "expect": { "error": { "code": "INVALID_OP", "path": "ops[1].id" } }
+  },
+  {
+    "name": "remove unknown component",
+    "base": "two",
+    "ops": [{ "op": "remove_component", "id": "shf_zzz" }],
+    "expect": { "error": { "code": "NOT_FOUND", "path": "ops[0].id" } }
+  }
+]

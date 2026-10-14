@@ -1,0 +1,86 @@
+[
+  {
+    "name": "add_shelf appends with default thickness and no appearance override",
+    "base": "two",
+    "ops": [{ "op": "add_shelf", "compartmentId": "cmp_a", "y": 1000, "id": "shf_2" }],
+    "expect": { "match": { "compartments": [{ "shelves": [{ "id": "shf_1" }, { "id": "shf_2", "y": 1000, "thickness": 18, "appearance": null }] }, {}] } }
+  },
+  {
+    "name": "add_shelf overlapping another shelf is rejected",
+    "base": "two",
+    "ops": [{ "op": "add_shelf", "compartmentId": "cmp_a", "y": 510, "id": "shf_2" }],
+    "expect": { "error": { "code": "OVERLAP", "path": "compartments[0].shelves[1]" } }
+  },
+  {
+    "name": "add_shelf above the interior is out of bounds",
+    "base": "two",
+    "ops": [{ "op": "add_shelf", "compartmentId": "cmp_a", "y": 1950, "id": "shf_2" }],
+    "expect": { "error": { "code": "OUT_OF_BOUNDS", "path": "compartments[0].shelves[1].y" } }
+  },
+  {
+    "name": "add_shelf into an unknown compartment",
+    "base": "two",
+    "ops": [{ "op": "add_shelf", "compartmentId": "cmp_zzz", "y": 100 }],
+    "expect": { "error": { "code": "NOT_FOUND", "path": "ops[0].compartmentId" } }
+  },
+  {
+    "name": "add_drawer",
+    "base": "two",
+    "ops": [{ "op": "add_drawer", "compartmentId": "cmp_b", "y": 0, "height": 300, "id": "drw_2" }],
+    "expect": { "match": { "compartments": [{}, { "drawers": [{ "id": "drw_2", "y": 0, "height": 300, "appearance": null }] }] } }
+  },
+  {
+    "name": "rail strictly inside a drawer overlaps",
+    "base": "two",
+    "ops": [{ "op": "add_rail", "compartmentId": "cmp_a", "y": 100, "id": "rail_2" }],
+    "expect": { "error": { "code": "OVERLAP", "path": "compartments[0].rails[0]" } }
+  },
+  {
+    "name": "touching items do not overlap",
+    "base": "two",
+    "ops": [
+      { "op": "add_shelf", "compartmentId": "cmp_a", "y": 200, "id": "shf_2" },
+      { "op": "add_rail", "compartmentId": "cmp_a", "y": 520, "id": "rail_2" }
+    ],
+    "expect": { "match": { "compartments": [{ "shelves": [{}, { "y": 200 }], "rails": [{ "id": "rail_2", "y": 520 }] }, {}] } }
+  },
+  {
+    "name": "modify_shelf moves a shelf",
+    "base": "two",
+    "ops": [{ "op": "modify_shelf", "id": "shf_1", "y": 800 }],
+    "expect": { "match": { "compartments": [{ "shelves": [{ "id": "shf_1", "y": 800, "thickness": 20 }] }, {}] } }
+  },
+  {
+    "name": "modify_drawer with unknown id",
+    "base": "two",
+    "ops": [{ "op": "modify_drawer", "id": "drw_zzz", "height": 100 }],
+    "expect": { "error": { "code": "NOT_FOUND", "path": "ops[0].id" } }
+  },
+  {
+    "name": "modify_rail",
+    "base": "two",
+    "ops": [{ "op": "modify_rail", "id": "rail_1", "y": 1800 }],
+    "expect": { "match": { "compartments": [{}, { "rails": [{ "id": "rail_1", "y": 1800 }] }] } }
+  },
+  {
+    "name": "drawer height below the minimum",
+    "base": "two",
+    "ops": [{ "op": "modify_drawer", "id": "drw_1", "height": 10 }],
+    "expect": { "error": { "code": "OUT_OF_RANGE", "path": "compartments[0].drawers[0].height" } }
+  },
+  {
+    "name": "a failing op rolls back the whole batch",
+    "base": "two",
+    "ops": [
+      { "op": "add_shelf", "compartmentId": "cmp_a", "y": 1000, "id": "shf_2" },
+      { "op": "add_shelf", "compartmentId": "cmp_a", "y": 1005, "id": "shf_3" }
+    ],
+    "expect": { "error": { "code": "OVERLAP", "path": "compartments[0].shelves[2]" } }
+  },
+  {
+    "name": "duplicate ids are rejected",
+    "base": "two",
+    "ops": [{ "op": "add_shelf", "compartmentId": "cmp_b", "y": 300, "id": "shf_1" }],
+    "expect": { "error": { "code": "DUPLICATE_ID", "path": "compartments[1].shelves[0].id" } }
+  }
+]

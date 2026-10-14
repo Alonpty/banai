@@ -1,0 +1,38 @@
+[
+  {
+    "name": "widening rescales compartments proportionally",
+    "base": "two",
+    "ops": [{ "op": "update_dimensions", "width": 1200 }],
+    "expect": { "match": { "dimensions": { "width": 1200 }, "compartments": [{ "width": 570 }, { "width": 570 }] } }
+  },
+  {
+    "name": "rescale remainder goes to the last compartment",
+    "base": "two",
+    "ops": [{ "op": "update_dimensions", "width": 1001 }],
+    "expect": { "match": { "compartments": [{ "width": 470 }, { "width": 471 }] } }
+  },
+  {
+    "name": "lowering height below an item is rejected, never silently deleted",
+    "base": "two",
+    "ops": [{ "op": "update_dimensions", "height": 1700 }],
+    "expect": { "error": { "code": "OUT_OF_BOUNDS", "path": "compartments[1].rails[0].y" } }
+  },
+  {
+    "name": "width below the rendering-safety minimum is rejected",
+    "base": "two",
+    "ops": [{ "op": "update_dimensions", "width": 200 }],
+    "expect": { "error": { "code": "OUT_OF_RANGE", "path": "ops[0].width" } }
+  },
+  {
+    "name": "depth change keeps everything else",
+    "base": "two",
+    "ops": [{ "op": "update_dimensions", "depth": 650 }],
+    "expect": { "match": { "dimensions": { "width": 1000, "height": 2000, "depth": 650 }, "compartments": [{ "width": 470 }, { "width": 470 }] } }
+  },
+  {
+    "name": "update_dimensions needs at least one field",
+    "base": "two",
+    "ops": [{ "op": "update_dimensions" }],
+    "expect": { "error": { "code": "INVALID_OP", "path": "ops[0]" } }
+  }
+]
