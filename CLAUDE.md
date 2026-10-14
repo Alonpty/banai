@@ -11,6 +11,13 @@ BanAI is an MVP AI wardrobe designer for standard straight wardrobes only. Three
 
 ## Working rules for this repo
 
+- **Always plan before executing.** Before writing code or changing infrastructure, produce a plan (use plan mode for any non-trivial task). The plan should cover:
+  - what will change
+  - which files and services are affected
+  - risks
+  - how the result will be verified
+
+  Get the user's approval before implementing. This applies to every phase and to any change outside a phase.
 - **Phased delivery.** Work proceeds Phase 1 → 10 (`docs/architecture.md` §10a). After each phase, stop, report (what was implemented, files changed, real test output, known issues, next step), and wait for the user's approval. Never roll into the next phase on your own.
 - **Branches.** All work lands on `dev`, which Railway auto-deploys to the `dev` environment. Pushing or merging to `main` deploys **production** and needs explicit user approval.
 - **Excluded features (do not build):** pricing, quotes, orders, accounts or registration, dashboards, manufacturing/CNC export, feasibility rules, room design, image uploads, voice, mobile-first layout, drag-and-drop geometry, and any AI change applied without approval. The app must never claim a design is manufacturable.
