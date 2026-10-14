@@ -13,6 +13,7 @@ An MVP for designing standard straight wardrobes with three synchronized parts: 
 | `shared/fixtures/` | Golden fixtures used by both test suites |
 | `supabase/` | Supabase CLI config and SQL migrations |
 | `docs/` | Architecture, schema, protocols, and infra docs |
+| `.claude/` | Claude Code project settings and the Obsidian work-log Stop hook |
 
 ## Local development
 
