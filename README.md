@@ -36,6 +36,9 @@ All three edit **one canonical design state** through the same typed operations.
   - Describe the wardrobe in Hebrew or English, and the agent replies with a **proposal**.
   - Nothing changes until you press **Confirm**.
   - Proposals are HMAC-signed, re-validated on the server, and rejected if the design changed in the meantime.
+- **Voice:**
+  - Press the mic, speak in Hebrew or English, and press it again. Your words are transcribed and sent as a chat message, and the result is still a proposal you confirm.
+  - Optionally, have replies **read aloud** in an AI-generated voice.
 - **Design-only scope:** the agent declines anything that isn't about wardrobe design.
 
 ## Screenshots
@@ -101,6 +104,7 @@ npm run dev
 |---|---|
 | `OPENAI_API_KEY` | Enables the AI Designer. Without it, the chat says the agent isn't connected. |
 | `OPENAI_CHAT_MODEL` | Model to use, for example `gpt-4.1`. It has a configurable default. |
+| `OPENAI_TRANSCRIBE_MODEL` / `OPENAI_TTS_MODEL` / `OPENAI_TTS_VOICE` | Voice models and voice. Optional; the defaults are `gpt-4o-mini-transcribe`, `gpt-4o-mini-tts` and `marin`. |
 | `PROPOSAL_SIGNING_KEY` | HMAC key for proposals. Required outside `APP_ENV=local`. |
 | `CORS_ORIGINS` | Allowed frontend origins, comma-separated. |
 | `APP_ENV` | Set to `local`, `dev` or `production`. API docs are disabled in production. |
@@ -143,6 +147,7 @@ Playwright E2E tests never call OpenAI; the agent flows mock the `/api` edge.
 | 3 | 3D viewer | Done |
 | 4 | UI and manual editing | Done |
 | 5 | AI designer agent | Merged |
+| 5+ | Voice (speech in, read-aloud out) | Done |
 | 6+ | Persistence and share links, AI photoreal render, deployment hardening | Planned |
 
 Save and Render in the top bar open dialogs that say those features aren't available yet.

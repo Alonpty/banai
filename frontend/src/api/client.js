@@ -51,5 +51,35 @@ export const getDefaultDesign = (fetchImpl = fetch) => getJson('/api/designs/def
 /** One agent turn: { messages: [{role, text}], design, revision } -> { reply, proposal|null }. */
 export const sendChat = (payload, fetchImpl = fetch) => postJson('/api/chat', payload, fetchImpl);
 
+/** Speech to text: a recorded audio Blob -> { text }. `language` only localizes server errors. */
+export const transcribe = (blob, language, fetchImpl = fetch) => request(
+  `/api/voice/transcribe?language=${encodeURIComponent(language)}`,
+  fetchImpl,
+  { method: 'POST', headers: { 'Content-Type': blob.type.split(';')[0] || 'audio/webm' }, body: blob },
+);
+
+/** Text to speech: { text, language, signature } -> an audio/mpeg Blob (signature = the chat replySignature). */
+export async function fetchSpeech(payload, fetchImpl = fetch) {
+  if (!API_BASE_URL) throw new Error('The API base URL is not configured');
+  let response;
+  try {
+    response = await fetchImpl(`${API_BASE_URL}/api/voice/speech`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    throw new ApiError('Could not reach the design service.');
+  }
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new ApiError(body?.error?.message ?? `Request to /api/voice/speech failed with status ${response.status}`, {
+      status: response.status,
+      code: body?.error?.code ?? 'HTTP_ERROR',
+    });
+  }
+  return response.blob();
+}
+
 /** Apply a signed proposal: { design, revision, proposal } -> { design, revision }. 409 = stale. */
 export const applyProposal = (payload, fetchImpl = fetch) => postJson('/api/proposals/apply', payload, fetchImpl);

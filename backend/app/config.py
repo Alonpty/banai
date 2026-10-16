@@ -17,6 +17,10 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     openai_chat_model: str = ""
     proposal_signing_key: str = ""
+    # ASSUMPTION: configurable voice defaults (empty = the defaults in app/api/voice.py).
+    openai_transcribe_model: str = ""
+    openai_tts_model: str = ""
+    openai_tts_voice: str = ""
 
     @property
     def cors_origin_list(self) -> list[str]:

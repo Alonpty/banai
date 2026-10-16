@@ -29,7 +29,7 @@ MESSAGE_TEXT_PATTERN = SAFE_TEXT_PATTERN.replace(r"\x00-\x1f", r"\x00-\x09\x0b-\
 class ChatMessage(BaseModel):
     model_config = ConfigDict(extra="forbid")
     role: Literal["user", "assistant"]
-    text: Annotated[str, Field(min_length=1, max_length=2000, pattern=SAFE_TEXT_PATTERN.replace(r"\x00-\x1f", r"\x00-\x09\x0b-\x1f"))]
+    text: Annotated[str, Field(min_length=1, max_length=2000, pattern=MESSAGE_TEXT_PATTERN)]
 
 
 class ChatRequest(BaseModel):
@@ -63,6 +63,10 @@ MESSAGES: dict[str, dict[str, str]] = {
     "INVALID_REQUEST": {"he": "ההודעה האחרונה חייבת להגיע מהלקוח.", "en": "The last message must come from the customer."},
     "AGENT_ERROR": {"he": "המעצב החכם לא זמין כרגע. נסה שוב בעוד רגע.", "en": "The AI designer is unavailable right now. Please try again in a moment."},
     "BAD_SIGNATURE": {"he": "לא ניתן לאמת את ההצעה. בקש מהמעצב שוב.", "en": "This proposal could not be verified. Ask the designer again."},
+    "NO_SPEECH": {"he": "לא שמעתי דיבור. נסה שוב.", "en": "I couldn't hear any speech. Please try again."},
+    "UNSUPPORTED_AUDIO": {"he": "פורמט השמע לא נתמך.", "en": "This audio format is not supported."},
+    "AUDIO_TOO_LARGE": {"he": "ההקלטה ארוכה מדי.", "en": "The recording is too long."},
+    "BAD_REPLY_SIGNATURE": {"he": "אפשר להקריא רק תשובות של המעצב.", "en": "Only the designer's own replies can be read aloud."},
     "STALE": {"he": "העיצוב השתנה אחרי שההצעה נוצרה. בקש מהמעצב הצעה חדשה.", "en": "The design changed after this proposal was made. Ask the designer to re-propose."},
 }
 
@@ -117,7 +121,9 @@ def chat(
         )
     except AgentUnavailable:
         return localized(502, "AGENT_ERROR", request.language)
-    return {"success": True, "data": {"reply": result.reply, "proposal": result.proposal}}
+    # The reply is signed so /api/voice/speech only reads aloud what this server said.
+    reply_signature = signing.sign_reply(get_signing_key(), result.reply)
+    return {"success": True, "data": {"reply": result.reply, "replySignature": reply_signature, "proposal": result.proposal}}
 
 
 @router.post("/proposals/apply")

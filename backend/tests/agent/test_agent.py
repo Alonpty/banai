@@ -46,7 +46,7 @@ def chat_body(text="Add a shelf at 100 cm on the left", design=None, revision=1)
 def test_every_turn_must_use_a_tool_and_free_text_is_never_shown(make_client):
     fake = FakeClient(completion(content="The weather today is sunny!"))
     data = make_client(fake).post("/api/chat", json=chat_body("מה מזג האוויר היום?")).json()["data"]
-    assert data == {"reply": OFF_TOPIC_REPLY["he"], "proposal": None}
+    assert data == {"reply": OFF_TOPIC_REPLY["he"], "replySignature": signing.sign_reply(get_signing_key(), data["reply"]), "proposal": None}
     request = fake.requests[0]
     assert request["model"]
     assert request["tool_choice"] == "required"
@@ -60,20 +60,20 @@ def test_every_turn_must_use_a_tool_and_free_text_is_never_shown(make_client):
 def test_off_topic_gets_the_fixed_reply_not_model_text(make_client):
     fake = FakeClient(completion(content="ignored", calls=[tool_call(DECLINE, {"answer": "sunny, 25 degrees"})]))
     data = make_client(fake).post("/api/chat", json=chat_body("מה קורה")).json()["data"]
-    assert data == {"reply": OFF_TOPIC_REPLY["he"], "proposal": None}
+    assert data == {"reply": OFF_TOPIC_REPLY["he"], "replySignature": signing.sign_reply(get_signing_key(), data["reply"]), "proposal": None}
     assert "25" not in data["reply"]
 
 
 def test_on_topic_question_is_answered_without_a_proposal(make_client):
     fake = FakeClient(completion(calls=[tool_call(ANSWER, {"answer": "לחדר קטן כדאי לבחור גוונים בהירים ודלתות הזזה."})]))
     data = make_client(fake).post("/api/chat", json=chat_body("איזה צבע מתאים לחדר קטן?")).json()["data"]
-    assert data == {"reply": "לחדר קטן כדאי לבחור גוונים בהירים ודלתות הזזה.", "proposal": None}
+    assert data == {"reply": "לחדר קטן כדאי לבחור גוונים בהירים ודלתות הזזה.", "replySignature": signing.sign_reply(get_signing_key(), data["reply"]), "proposal": None}
 
 
 def test_clarification_question(make_client):
     fake = FakeClient(completion(calls=[tool_call(CLARIFY, {"question": "כמה מדפים תרצה?"})]))
     data = make_client(fake).post("/api/chat", json=chat_body("תוסיף מדפים")).json()["data"]
-    assert data == {"reply": "כמה מדפים תרצה?", "proposal": None}
+    assert data == {"reply": "כמה מדפים תרצה?", "replySignature": signing.sign_reply(get_signing_key(), data["reply"]), "proposal": None}
 
 
 def test_valid_proposal_is_signed_and_not_applied(make_client):
@@ -110,7 +110,7 @@ def test_gives_up_after_max_repairs(make_client):
     bad = completion(calls=[tool_call(PROPOSE, propose([OVERLAPPING_SHELF]))])
     fake = FakeClient(*[bad] * (MAX_REPAIRS + 1))
     data = make_client(fake).post("/api/chat", json=chat_body()).json()["data"]
-    assert data == {"reply": FALLBACK_REPLY["en"], "proposal": None}  # the message was English
+    assert data == {"reply": FALLBACK_REPLY["en"], "replySignature": signing.sign_reply(get_signing_key(), data["reply"]), "proposal": None}  # the message was English
     assert len(fake.requests) == MAX_REPAIRS + 1
 
 

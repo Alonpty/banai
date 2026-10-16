@@ -29,3 +29,12 @@ def sign(key: bytes, *, proposal_id: str, ops: list, base_revision: int, base_ha
 def verify(key: bytes, signature: str, *, proposal_id: str, ops: list, base_revision: int, base_hash: str) -> bool:
     expected = sign(key, proposal_id=proposal_id, ops=ops, base_revision=base_revision, base_hash=base_hash)
     return hmac.compare_digest(expected, signature)
+
+
+def sign_reply(key: bytes, text: str) -> str:
+    """Signs an agent reply, so text-to-speech only reads aloud what the agent said (not any text)."""
+    return hmac.new(key, b"reply:" + text.encode(), hashlib.sha256).hexdigest()
+
+
+def verify_reply(key: bytes, signature: str, text: str) -> bool:
+    return hmac.compare_digest(sign_reply(key, text), signature)

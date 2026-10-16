@@ -56,8 +56,9 @@ export function createChatModel({ getRevision, agent = null, getLanguage = () =>
   const t = () => stringsFor(getLanguage());
   // Every message remembers the language it was written in, so switching the chat language later
   // never changes how earlier messages look (a Hebrew message stays Hebrew and right-to-left).
-  const push = (role, text, language = getLanguage()) => {
-    messages.push(Object.freeze({ id: nextId, role, text, language }));
+  // An agent reply also keeps its server signature, which read-aloud needs (/api/voice/speech).
+  const push = (role, text, language = getLanguage(), signature = null) => {
+    messages.push(Object.freeze({ id: nextId, role, text, language, ...(signature && { signature }) }));
     nextId += 1;
   };
   // Only real dialogue goes to the model; system notes (cancelled, applied...) are UI-only.
@@ -73,8 +74,8 @@ export function createChatModel({ getRevision, agent = null, getLanguage = () =>
     busy = true;
     notify();
     try {
-      const { reply, proposal: signed } = await agent({ messages: history(), language });
-      push('assistant', reply, language);
+      const { reply, replySignature, proposal: signed } = await agent({ messages: history(), language });
+      push('assistant', reply, language, replySignature);
       if (signed) proposal = fromServerProposal(signed, language);
     } catch (error) {
       push('system', error?.message && error.status ? error.message : stringsFor(language).agentError, language);

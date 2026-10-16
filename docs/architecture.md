@@ -82,6 +82,21 @@ Revision and persistence metadata (`revision`, `designId`) stay **outside** the 
 6. **Cancel** discards the proposal on the client only, and a "cancelled" note goes into the chat history.
 7. Any manual edit made while a proposal is pending bumps the revision. The card then shows "design changed – ask agent to re-propose".
 
+### 5a. Voice (chained pipeline, added 2026-10-16)
+Voice was originally an excluded feature. It was added on request, following OpenAI's voice-agents guide, as a **chained pipeline**: speech-to-text, then the existing agent, then optional text-to-speech.
+- **Mic → `POST /api/voice/transcribe`.**
+  - The request is a raw audio body with a content-type allowlist and a 1 MB streamed cap. The browser stops recording itself at 60 s.
+  - It returns `{text}`. No language hint is sent, so either language is transcribed as spoken.
+  - The text then goes through the normal `submit()`, which detects the language and calls `/api/chat`.
+- **Read replies aloud** (opt-in, remembered per browser): `POST /api/voice/speech {text, language}` returns `audio/mpeg`.
+  - The toggle and its notice disclose that the voice is AI-generated, as OpenAI's usage policies require.
+- **Why chained and not Realtime speech-to-speech.** A Realtime session would need its own tool loop and browser ephemeral keys, and it would bypass the signed-proposal protocol. Chained keeps one agent, one scope policy, and one Confirm step.
+- **Defaults (configurable):**
+  - `OPENAI_TRANSCRIBE_MODEL=gpt-4o-mini-transcribe`
+  - `OPENAI_TTS_MODEL=gpt-4o-mini-tts`
+  - `OPENAI_TTS_VOICE=marin`
+  - The voices are optimized for English, so Hebrew read-aloud may sound accented.
+
 ## 6. API contracts (FastAPI, Pydantic, `{success, data, error}` envelope)
 | Method | Route | Purpose |
 |---|---|---|
@@ -90,6 +105,8 @@ Revision and persistence metadata (`revision`, `designId`) stay **outside** the 
 | GET | `/api/designs/default` | basic wardrobe template |
 | POST | `/api/chat` | agent turn → reply + optional signed proposal |
 | POST | `/api/proposals/apply` | verify, check stale, apply → new design |
+| POST | `/api/voice/transcribe` | raw audio (≤ 1 MB) → `{text}` |
+| POST | `/api/voice/speech` | `{text, language}` → `audio/mpeg` |
 | POST | `/api/designs/validate` | server validation of a manual design (used before save) |
 | POST | `/api/designs` | create → `{designId, accessToken, revision}` |
 | GET | `/api/designs/{id}` | header `Authorization: Bearer <token>` → design |

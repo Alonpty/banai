@@ -149,6 +149,16 @@ describe('chat model with a connected agent', () => {
     expect(model.getProposal()).toBeNull();
     await vi.waitFor(() => expect(model.isBusy()).toBe(false));
   });
+
+  it('keeps the reply signature (for read-aloud) on the assistant message only', async () => {
+    const agent = vi.fn(async () => ({ reply: 'ok', replySignature: 'f'.repeat(64), proposal: null }));
+    const model = createChatModel({ getRevision: () => 1, agent });
+    model.send('hello');
+    await vi.waitFor(() => expect(model.isBusy()).toBe(false));
+    const [user, reply] = model.getMessages();
+    expect(user).not.toHaveProperty('signature');
+    expect(reply).toMatchObject({ role: 'assistant', text: 'ok', signature: 'f'.repeat(64) });
+  });
 });
 
 describe('chat model language', () => {
