@@ -1,31 +1,95 @@
-/* Design tokens from the Stitch design system "Nordic Atelier" (see /.stitch/DESIGN.md). */
+/* Material Design 3 tokens for BanAI (light scheme, seed #B4532A).
+   Source: Stitch project "BanAI Wardrobe Designer – M3" (projects/3661595013505240058),
+   design system "BanAI Material 3". See /.stitch/DESIGN.md. */
 :root {
-  --color-bg: #f4f2ee;
-  --color-surface: #ffffff;
-  --color-ink: #1f2328;
-  --color-muted: #5b6470;
-  --color-border: #e3e0da;
-  --color-accent: #b4532a;
-  --color-accent-hover: #9c4420;
-  --color-accent-soft: rgba(180, 83, 42, 0.08);
-  --color-success: #4f7a5a;
-  --color-danger: #a33a2b;
-  --color-danger-soft: #fbeae7;
-  --color-viewer: #eceeec;
+  /* Color roles */
+  --md-sys-color-primary: #b4532a;
+  --md-sys-color-on-primary: #ffffff;
+  --md-sys-color-primary-container: #ffdbce;
+  --md-sys-color-on-primary-container: #380d00;
+  --md-sys-color-secondary: #77574b;
+  --md-sys-color-on-secondary: #ffffff;
+  --md-sys-color-secondary-container: #ffdbce;
+  --md-sys-color-on-secondary-container: #2c160d;
+  --md-sys-color-tertiary: #6b5e2f;
+  --md-sys-color-tertiary-container: #f4e2a7;
+  --md-sys-color-error: #ba1a1a;
+  --md-sys-color-on-error: #ffffff;
+  --md-sys-color-error-container: #ffdad6;
+  --md-sys-color-on-error-container: #410002;
+  --md-sys-color-success: #4f7a5a;
+  --md-sys-color-surface: #fff8f6;
+  --md-sys-color-on-surface: #231917;
+  --md-sys-color-on-surface-variant: #53433e;
+  --md-sys-color-surface-container-lowest: #ffffff;
+  --md-sys-color-surface-container-low: #fff1ed;
+  --md-sys-color-surface-container: #fceae4;
+  --md-sys-color-surface-container-high: #f6e4de;
+  --md-sys-color-surface-container-highest: #f0deD8;
+  --md-sys-color-outline: #85736d;
+  --md-sys-color-outline-variant: #d8c2bb;
+  --md-sys-color-scrim: rgba(0, 0, 0, 0.32);
+  --md-sys-color-viewer: #eceeec;
 
-  --font-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --text-xs: 11px;
-  --text-sm: 13px;
-  --text-md: 14px;
-  --text-lg: 16px;
+  /* State layers */
+  --md-sys-state-hover: 0.08;
+  --md-sys-state-focus: 0.1;
+  --md-sys-state-pressed: 0.1;
 
+  /* Type scale (Roboto) */
+  --md-ref-typeface: 'Roboto', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --md-sys-typescale-headline-small: 400 24px/32px var(--md-ref-typeface);
+  --md-sys-typescale-headline-medium: 400 28px/36px var(--md-ref-typeface);
+  --md-sys-typescale-headline-large: 400 32px/40px var(--md-ref-typeface);
+  --md-sys-typescale-title-large: 400 22px/28px var(--md-ref-typeface);
+  --md-sys-typescale-title-medium: 500 16px/24px var(--md-ref-typeface);
+  --md-sys-typescale-title-small: 500 14px/20px var(--md-ref-typeface);
+  --md-sys-typescale-body-large: 400 16px/24px var(--md-ref-typeface);
+  --md-sys-typescale-body-medium: 400 14px/20px var(--md-ref-typeface);
+  --md-sys-typescale-body-small: 400 12px/16px var(--md-ref-typeface);
+  --md-sys-typescale-label-large: 500 14px/20px var(--md-ref-typeface);
+  --md-sys-typescale-label-medium: 500 12px/16px var(--md-ref-typeface);
+  --md-sys-typescale-label-small: 500 11px/16px var(--md-ref-typeface);
+
+  /* Shape scale */
+  --md-sys-shape-extra-small: 4px;
+  --md-sys-shape-small: 8px;
+  --md-sys-shape-medium: 12px;
+  --md-sys-shape-large: 16px;
+  --md-sys-shape-extra-large: 28px;
+  --md-sys-shape-full: 999px;
+
+  /* Elevation (shadows only for dialogs and menus; everything else uses tonal surfaces) */
+  --md-sys-elevation-1: 0 1px 2px rgba(35, 25, 23, 0.3), 0 1px 3px 1px rgba(35, 25, 23, 0.15);
+  --md-sys-elevation-3: 0 1px 3px rgba(35, 25, 23, 0.3), 0 4px 8px 3px rgba(35, 25, 23, 0.15);
+
+  /* Spacing (4px grid) */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
   --space-4: 16px;
   --space-5: 24px;
 
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --focus-outline: 2px solid var(--color-accent);
+  --focus-outline: 2px solid var(--md-sys-color-primary);
+
+  /* Aliases used by existing component CSS and JS-created elements */
+  --color-bg: var(--md-sys-color-surface);
+  --color-surface: var(--md-sys-color-surface-container-lowest);
+  --color-ink: var(--md-sys-color-on-surface);
+  --color-muted: var(--md-sys-color-on-surface-variant);
+  --color-border: var(--md-sys-color-outline-variant);
+  --color-accent: var(--md-sys-color-primary);
+  --color-accent-hover: #9c4420;
+  --color-accent-soft: rgba(180, 83, 42, 0.12);
+  --color-success: var(--md-sys-color-success);
+  --color-danger: var(--md-sys-color-error);
+  --color-danger-soft: var(--md-sys-color-error-container);
+  --color-viewer: var(--md-sys-color-viewer);
+  --font-ui: var(--md-ref-typeface);
+  --text-xs: 11px;
+  --text-sm: 13px;
+  --text-md: 14px;
+  --text-lg: 16px;
+  --radius-sm: var(--md-sys-shape-small);
+  --radius-md: var(--md-sys-shape-small);
 }
