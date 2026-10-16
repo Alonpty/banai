@@ -230,3 +230,13 @@ def test_health_reports_whether_the_agent_is_configured():
 
 def test_blank_model_setting_keeps_the_default():
     assert Settings(openai_chat_model="", openai_reasoning_effort=" ").openai_chat_model == "gpt-6-luna"
+
+
+def test_reply_language_follows_the_customers_script():
+    from app.agent.orchestrator import reply_language
+
+    assert reply_language("תוסיף מדף") == "Hebrew"
+    assert reply_language("Add a shelf").startswith("English")
+    client = FakeClient(text("ok"))
+    turn(client, message="תוסיף מדף")
+    assert client.requests[0]["input"][0]["content"].endswith("REPLY LANGUAGE: Hebrew")
