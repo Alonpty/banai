@@ -9,6 +9,13 @@ export const NOT_CONNECTED_MESSAGE =
 export const STALE_MESSAGE = 'Design changed. Ask the agent to re-propose.';
 export const MAX_MESSAGE_LENGTH = 2000;
 
+// Starter prompts shown before the first message. Picking one only fills the composer.
+export const SUGGESTIONS = Object.freeze([
+  '240 cm wide, 260 cm tall, white, three compartments',
+  'Tall wardrobe with sliding doors and a hanging rail',
+  'Four shelves on the left, hanging in the middle, three drawers on the right',
+]);
+
 export function proposalStatus(proposal, currentRevision) {
   if (!proposal) return null;
   return proposal.baseRevision === currentRevision ? 'pending' : 'stale';

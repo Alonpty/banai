@@ -16,7 +16,7 @@
 
 ## Tokens (as implemented in `tokens.css`)
 - **Colour:** seed `#B4532A` (primary). M3 roles: primary, on-primary, primary-container `#FFDBCE`, secondary-container, tertiary-container, surface `#FFF8F6`, surface-container lowest to highest, on-surface, on-surface-variant, outline, outline-variant, error. Light scheme only.
-- **Type:** Roboto (self-hosted via `@fontsource/roboto`), M3 scale as `--md-sys-typescale-*`. Numbers use `tabular-nums`.
+- **Type:** Bricolage Grotesque (headings, wordmark) with DM Sans (UI and body), both self-hosted via `@fontsource`. M3 scale as `--md-sys-typescale-*`; the display face is used for headline and title roles, DM Sans for body and label roles. Numbers use `tabular-nums`.
 - **Shape:** extra-small 4 (chips, labels), small 8 (text fields, tags), medium 12 (cards, list rows), large 16 (chat bubbles, entry cards), extra-large 28 (dialogs), full (buttons, switch, segmented control).
 - **Elevation:** tonal surface containers. Shadows only on dialogs (`--md-sys-elevation-3`).
 - **Aliases:** the older `--color-*`, `--radius-*` and `--text-*` names still resolve (to M3 values), so existing component CSS and JS-created elements keep working.
@@ -39,6 +39,18 @@ Stitch added these; they are not in the spec or have no domain support:
 - 3D Orbit / Front Elevation / Wireframe tabs, lighting and scale controls (the viewer only rotates, zooms and selects).
 - Suggested-adjustment chips, Duplicate button, Terms/Privacy links, "Autonomous interior synthesis" chip.
 - Cutlist and cost estimation, pricing, accounts.
+
+## Logo
+Inline SVG (`ui/logo.js`): a rounded gradient mark with two doors, pulls and an AI sparkle, plus a bold Bricolage Grotesque wordmark where "AI" carries the terracotta gradient. Used in the top app bar (with a "Wardrobe Designer" tagline) and on the start screen.
+
+## Door rendering
+- **Hinged:** one panel per door spanning its compartments, a vertical handle on the free edge (opposite the hinge), and a thin outline.
+- **Sliding:** panels overlap their neighbours (60 mm) and alternate between a back and a front track, inside a top and bottom rail, each with a pull handle on the side that is not covered. One panel has no overlap.
+- **None:** no doors and no hardware. "Show interior" hides doors together with their hardware.
+- Handles, rails and outlines are visual hardware only (`kind: 'hardware'`): not selectable, not part of the design, and clicks pass through to the door.
+
+## Interaction
+Press ripples on buttons, chips, segmented options and swatches; hover lift on cards and starter prompts; message and proposal entrance animations; dialog scale-in; a pointer cursor over selectable components in the 3D view. All motion is disabled under `prefers-reduced-motion`.
 
 ## Honesty rules in the UI
 - The AI agent is not connected until Phase 5: sending a message gets a clear "not connected" reply, and the design is never changed.

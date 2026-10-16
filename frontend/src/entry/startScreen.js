@@ -1,6 +1,7 @@
 // Start screen: three ways in, one editor. Shown on load as a modal; choosing an option closes it.
 import { el } from '../editor/fields.js';
 import { icon } from '../ui/icons.js';
+import { createLogo } from '../ui/logo.js';
 import { ENTRY_POINTS } from './entryPoints.js';
 
 export const START_FOOTNOTE = 'Designs are illustrative previews and are not manufacturing drawings.';
@@ -27,7 +28,7 @@ export function mountStartScreen({ onChoose }) {
   });
 
   const dialog = el('dialog', { className: 'start', attrs: { 'aria-labelledby': 'start-title' } }, [
-    el('header', { className: 'start__bar' }, [el('span', { className: 'start__brand', text: 'BanAI' })]),
+    el('header', { className: 'start__bar' }, [createLogo({ size: 36 })]),
     el('main', { className: 'start__main' }, [
       el('h1', { className: 'start__title', text: 'Design your wardrobe', attrs: { id: 'start-title' } }),
       el('p', { className: 'start__subtitle', text: 'Choose how you would like to begin. You can switch between the AI designer and manual editing at any time.' }),
