@@ -43,3 +43,11 @@ These parts of the Stitch output are outside the agreed MVP scope:
 - **"Export JSON" suggestion:** not requested.
 
 The left chat panel shows an empty state only until the agent is built in Phase 5.
+
+## Evolution for the workspace redesign (branch `uxui`)
+- **Visual target:** the BanAI UX/UI reference prototype (`banai_ui_reference.html`).
+- **Chrome:** warm light canvas gradient (`#F7F5F2` → `#EFEDE8`), floating off-white panels `#FBFAF8` with 14px radius and a soft panel shadow.
+- **Accent:** blue `#2F6FED` for selection, AI context and focus; **primary actions** dark navy `#273446`; success `#1F9D72`; danger `#D9534F`.
+- **Preview colours:** added = blue ghost, changed = amber `#D4930F`, removed = red `#D9534F`.
+- **Hierarchy:** the 3D stage dominates; pill toolbar (Front / Interior / Dimensions), Room + Reset view top right, structure cards under the view.
+- Details: `docs/ux-workspace.md`.

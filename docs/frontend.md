@@ -1,5 +1,8 @@
 # Frontend Architecture (vanilla JS + Three.js)
 
+> The workspace UX (contextual inspector, shared selection, proposal preview, undo/redo,
+> structure strip, start screen) is documented in [`ux-workspace.md`](ux-workspace.md).
+
 ```
 main.js (boot) ── api/client.js ──► GET /api/catalog, /api/designs/default
    │
