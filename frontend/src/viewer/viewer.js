@@ -111,6 +111,7 @@ export function createViewer(container, store) {
     camera,
     getTargets: () => (group ? group.children : []),
     onPick: (hit) => store.select(componentAt(hit, store.getState().design)),
+    onHover: (hit) => { renderer.domElement.style.cursor = hit?.object.userData.componentId ? 'pointer' : ''; },
   });
   const unsubscribe = store.subscribe(sync);
   sync(store.getState());

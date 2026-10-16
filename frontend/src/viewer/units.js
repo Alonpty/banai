@@ -11,4 +11,11 @@ export const VISUAL = Object.freeze({
   drawerGap: 3,
   railRadius: 12,
   slidingTrackGap: 4,
+  slidingOverlap: 60,
+  slidingRailHeight: 20,
+  handleWidth: 14,
+  handleDepth: 12,
+  handleLength: 400,
+  handleHeightFromFloor: 1050,
+  handleInset: 40,
 });

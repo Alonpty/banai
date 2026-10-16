@@ -17,6 +17,10 @@ const resolveRoughness = (ref) => (ref.custom ? DEFAULT_ROUGHNESS : FINISH_ROUGH
 export function createMaterials(catalog) {
   const cache = new Map();
   const rail = new THREE.MeshStandardMaterial({ color: '#9ea3a8', metalness: 0.8, roughness: 0.3 });
+  // Door handles and sliding rails: neutral dark metal, independent of the design's appearance.
+  const hardware = new THREE.MeshStandardMaterial({ color: '#4a4e53', metalness: 0.6, roughness: 0.4 });
+  // Thin outline on door panels so adjacent white panels stay readable.
+  const doorEdge = new THREE.LineBasicMaterial({ color: '#3b3530', transparent: true, opacity: 0.38 });
 
   return {
     forAppearance(appearance) {
@@ -31,6 +35,8 @@ export function createMaterials(catalog) {
       return cache.get(key);
     },
     rail,
+    hardware,
+    doorEdge,
     /** Dispose cached materials the current scene no longer uses (keeps memory bounded). */
     retainOnly(inUse) {
       for (const [key, material] of cache) {
@@ -44,6 +50,8 @@ export function createMaterials(catalog) {
       cache.forEach((material) => material.dispose());
       cache.clear();
       rail.dispose();
+      hardware.dispose();
+      doorEdge.dispose();
     },
   };
 }
