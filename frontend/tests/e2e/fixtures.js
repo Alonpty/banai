@@ -17,6 +17,8 @@ export { expect };
 
 export async function openDesigner(page) {
   await page.goto('/');
+  // The start screen is modal: choose the basic wardrobe to reach the editor.
+  await page.getByTestId('entry-basic').click();
   await page.waitForFunction(() => window.__banai?.viewer.meshOf('shf_l1'));
 }
 
