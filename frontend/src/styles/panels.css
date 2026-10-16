@@ -42,6 +42,8 @@
 .bubble--user { border-color: #dce7ff; background: #eef3ff; }
 .bubble--clarify { border-color: #f1dfb8; background: #fffaf0; }
 .bubble__text { margin: 0; white-space: pre-wrap; }
+.bubble--scope { border-color: #e4e0d9; background: #f7f5f1; color: #475160; }
+.bubble__scope-label { display: inline-flex; align-items: center; gap: 5px; margin-bottom: 4px; color: #6b7280; font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; }
 .bubble__context { display: block; margin-bottom: 4px; color: var(--color-accent); font-size: var(--text-xs); font-weight: 600; }
 .typing { display: flex; gap: 4px; padding: 14px 12px; }
 .typing span { width: 6px; height: 6px; border-radius: 50%; background: var(--color-subtle); animation: blink 1.2s infinite; }

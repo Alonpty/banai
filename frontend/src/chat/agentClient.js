@@ -59,6 +59,7 @@ export function createAgentClient({ agentAvailable = false, fetchImpl } = {}) {
       if (kind === 'proposal' && proposal) {
         return { kind, text, ops: proposal.ops, summary: proposal.summary ?? [], signed: proposal };
       }
+      if (kind === 'out_of_scope') return { kind, text }; // declined: not about the wardrobe
       return { kind: kind === 'clarification' ? 'clarification' : 'reply', text };
     },
   };

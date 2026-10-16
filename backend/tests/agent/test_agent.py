@@ -71,6 +71,12 @@ class TestOrchestrator:
         result = turn(FakeClient(tool("ask_clarification", {"question": "Which section?"})))
         assert result == {"kind": "clarification", "text": "Which section?"}
 
+    def test_out_of_scope_is_declined_without_answering(self):
+        result = turn(FakeClient(tool("out_of_scope", {"message": "I can only help with your wardrobe."})), message="What is the capital of France?")
+        assert result == {"kind": "out_of_scope", "text": "I can only help with your wardrobe."}
+        empty = turn(FakeClient(tool("out_of_scope", {})))
+        assert empty == {"kind": "out_of_scope", "text": orchestrator.OUT_OF_SCOPE_REPLY}
+
     def test_valid_proposal_is_signed_and_never_applied(self):
         design = basic_wardrobe()
         before = copy.deepcopy(design)
@@ -113,7 +119,7 @@ class TestOrchestrator:
         turn(client, design=edited, selection={"id": "shf_l2", "kind": "shelf"})
         request = client.requests[0]
         assert request["model"] == "test-model"
-        assert {t["name"] for t in request["tools"]} == {"propose_changes", "ask_clarification"}
+        assert {t["name"] for t in request["tools"]} == {"propose_changes", "ask_clarification", "out_of_scope"}
         assert request["store"] is False and request["parallel_tool_calls"] is False
         context = request["input"][0]
         assert context["role"] == "developer"

@@ -27,7 +27,8 @@ from app.services import signing
 MAX_OUTPUT_TOKENS = 4000
 # Uses uvicorn's configured logger so turn metrics show up in the server log (no content, no ids).
 log = logging.getLogger("uvicorn.error")
-FALLBACK_REPLY = "Sorry, I couldn't work that out. Could you say it another way?"
+OUT_OF_SCOPE_REPLY = "I can only help with designing your wardrobe. For example, try \"add two drawers to the right section\"."
+FALLBACK_REPLY ="Sorry, I couldn't work that out. Could you say it another way?"
 GAVE_UP = ("I couldn't turn that into a valid change for this wardrobe. "
            "Could you be more specific, for example which section and how many cm?")
 
@@ -139,6 +140,9 @@ def run_turn(
             args = json.loads(call.arguments or "{}")
         except json.JSONDecodeError:
             args = None
+        if call.name == "out_of_scope":
+            message = args.get("message") if isinstance(args, dict) else None
+            return done({"kind": "out_of_scope", "text": (message or "").strip()[:500] or OUT_OF_SCOPE_REPLY})
         if call.name == "ask_clarification" and isinstance(args, dict) and isinstance(args.get("question"), str):
             return done({"kind": "clarification", "text": args["question"].strip() or FALLBACK_REPLY})
 

@@ -91,3 +91,11 @@ describe('confirmProposal', () => {
     expect(store.getState().design.compartments[0].shelves[0].y).toBe(450);
   });
 });
+
+describe('out-of-scope questions', () => {
+  it('maps a declined, unrelated question to out_of_scope (nothing proposed)', async () => {
+    const fetchImpl = () => ok({ kind: 'out_of_scope', text: 'I can only help with your wardrobe design.' });
+    const result = await createAgentClient({ agentAvailable: true, fetchImpl }).send({ message: 'Capital of France?', design, revision: 1, catalog });
+    expect(result).toEqual({ kind: 'out_of_scope', text: 'I can only help with your wardrobe design.' });
+  });
+});

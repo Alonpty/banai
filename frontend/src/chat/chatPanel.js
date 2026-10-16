@@ -40,7 +40,7 @@ function historyOf(messages) {
     }));
 }
 
-const GREETING = 'Describe a change, or click a part of the wardrobe and tell me what to do with it. '
+const GREETING = 'I help only with designing your wardrobe. Describe a change, or click a part of the wardrobe and tell me what to do with it. '
   + 'Suggested changes are previewed in 3D first and only applied when you approve them.';
 
 export function mountChat(root, store, agent) {
@@ -127,6 +127,16 @@ export function mountChat(root, store, agent) {
         proposalCard(message, state),
       ]);
     }
+    if (message.type === 'scope') {
+      // A declined, unrelated question: clearly labelled so the customer knows why.
+      return el('li', { className: 'msg msg--assistant' }, [el('div', { className: 'msg__row' }, [
+        avatar('assistant'),
+        el('div', { className: 'bubble bubble--scope', attrs: { 'data-testid': 'out-of-scope' } }, [
+          el('span', { className: 'bubble__scope-label' }, [icon('info', { size: 13 }), el('span', { text: 'Outside wardrobe design' })]),
+          el('p', { className: 'bubble__text', text: message.text, attrs: { dir: 'auto' } }),
+        ]),
+      ])]);
+    }
     const bubble = el('div', { className: `bubble${message.role === 'user' ? ' bubble--user' : ''}${message.type === 'clarification' ? ' bubble--clarify' : ''}` }, [
       ...(message.context ? [el('span', { className: 'bubble__context', text: message.context })] : []),
       el('p', { className: 'bubble__text', text: message.text }),
@@ -189,6 +199,10 @@ export function mountChat(root, store, agent) {
       response = { kind: 'reply', text: 'The assistant is not reachable right now. You can keep editing manually.' };
     } finally {
       busy = false;
+    }
+    if (response.kind === 'out_of_scope') {
+      push({ role: 'assistant', type: 'scope', text: response.text });
+      return;
     }
     if (response.kind !== 'proposal') {
       push({ role: 'assistant', type: response.kind === 'clarification' ? 'clarification' : 'text', text: response.text });
