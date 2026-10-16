@@ -1,7 +1,7 @@
 import '@fontsource/inter/400.css';
 import '@fontsource/inter/500.css';
 import '@fontsource/inter/600.css';
-import { getCatalog, getDefaultDesign } from './api/client.js';
+import { getCatalog, getDefaultDesign, getHealth } from './api/client.js';
 import { createAgentClient } from './chat/agentClient.js';
 import { mountChat } from './chat/chatPanel.js';
 import { mountPanel } from './editor/panel.js';
@@ -21,8 +21,9 @@ function showError(message) {
 async function boot() {
   let catalog;
   let initial;
+  let health;
   try {
-    [catalog, initial] = await Promise.all([getCatalog(), getDefaultDesign()]);
+    [catalog, initial, health] = await Promise.all([getCatalog(), getDefaultDesign(), getHealth()]);
   } catch {
     showError('Could not reach the design service. Please check your connection and reload.');
     return;
@@ -34,7 +35,8 @@ async function boot() {
   mountRoomControls(document.getElementById('viewer-reset'), store);
   mountStructureNav(document.getElementById('structure-nav'), store);
   mountPanel(document.getElementById('properties-content'), store, { headingRoot: document.getElementById('inspector-heading') });
-  const agent = createAgentClient();
+  // The real AI agent when the server has an OpenAI key; otherwise the labelled demo.
+  const agent = createAgentClient({ agentAvailable: health.data.agent === true });
   const chat = mountChat(document.getElementById('chat-root'), store, agent);
   mountStartScreen({ chat, shell, notice: agent.mode === 'demo' ? agent.notice : '' });
   if (import.meta.env.DEV) {

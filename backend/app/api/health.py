@@ -7,4 +7,6 @@ router = APIRouter()
 
 @router.get("/api/health")
 def health() -> dict:
-    return {"success": True, "data": {"status": "ok", "env": get_settings().app_env}}
+    settings = get_settings()
+    # `agent` tells the UI whether the real AI agent is available (never exposes the key).
+    return {"success": True, "data": {"status": "ok", "env": settings.app_env, "agent": settings.agent_configured}}

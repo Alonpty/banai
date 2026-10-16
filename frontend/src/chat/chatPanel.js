@@ -7,6 +7,7 @@
 // committed) and applied only by an explicit "Apply changes" (store.applyProposal()).
 import { el } from '../editor/fields.js';
 import { friendlyError } from '../editor/opsFromForm.js';
+import { confirmProposal } from './confirm.js';
 import { icon } from '../ui/icons.js';
 import { labelOf } from '../ui/naming.js';
 
@@ -20,6 +21,24 @@ const QUICK = Object.freeze({
   partition: ['Remove this'],
   door: ['Make this a mirror door', 'Make this walnut', 'Sliding doors', 'Remove this'],
 });
+
+const APPLY_ERRORS = Object.freeze({
+  INVALID_SIGNATURE: 'That suggestion could not be verified. Please ask again.',
+  INVALID_OPS: 'That suggestion no longer fits the design. Please ask again.',
+  NETWORK: 'Could not reach the server to apply the changes. Please try again.',
+});
+
+/** Earlier conversation for the agent (oldest first): text, questions and suggestions. */
+function historyOf(messages) {
+  return messages
+    .filter((m) => ['text', 'clarification', 'proposal'].includes(m.type) && m.text)
+    .map((m) => ({
+      role: m.role,
+      content: (m.type === 'proposal'
+        ? [m.text, ...(m.lines ?? []).map((line) => `- ${line}`)].join('\n')
+        : m.text).slice(0, 2000),
+    }));
+}
 
 const GREETING = 'Describe a change, or click a part of the wardrobe and tell me what to do with it. '
   + 'Suggested changes are previewed in 3D first and only applied when you approve them.';
@@ -66,9 +85,14 @@ export function mountChat(root, store, agent) {
       const cancel = el('button', { className: 'btn btn--secondary', text: 'Cancel', attrs: { type: 'button', 'data-testid': 'proposal-cancel' } });
       const apply = el('button', { className: 'btn btn--primary', text: 'Apply changes', attrs: { type: 'button', 'data-testid': 'proposal-apply' } });
       cancel.addEventListener('click', () => store.cancelProposal());
-      apply.addEventListener('click', () => {
-        const result = store.applyProposal();
-        if (!result.ok && result.error.code !== 'STALE') push({ role: 'assistant', type: 'text', text: friendlyError(result.error) });
+      apply.addEventListener('click', async () => {
+        apply.disabled = true;
+        cancel.disabled = true;
+        apply.textContent = 'Applying…';
+        const result = await confirmProposal(store);
+        if (!result.ok && !['STALE', 'BUSY'].includes(result.error?.code)) {
+          push({ role: 'assistant', type: 'text', text: APPLY_ERRORS[result.error?.code] ?? friendlyError(result.error) });
+        }
       });
       card.append(
         el('p', { className: 'proposal__status' }, [el('span', { className: 'pulse', attrs: { 'aria-hidden': 'true' } }), el('span', { text: 'Previewing in 3D' })]),
@@ -152,6 +176,7 @@ export function mountChat(root, store, agent) {
     if (!message || busy) return;
     const state = store.getState();
     const context = state.selection && state.selection.kind !== 'carcass' ? labelOf(state.design, state.selection.id) : null;
+    const history = historyOf(messages);
     push({ role: 'user', type: 'text', text: message, context });
     busy = true;
     renderList();
@@ -159,7 +184,7 @@ export function mountChat(root, store, agent) {
     try {
       // The agent always receives the latest COMMITTED design and the current selection.
       const latest = store.getState();
-      response = await agent.send({ message, design: latest.design, selection: latest.selection, revision: latest.revision, catalog: latest.catalog, mode });
+      response = await agent.send({ message, history, design: latest.design, selection: latest.selection, revision: latest.revision, catalog: latest.catalog, mode });
     } catch {
       response = { kind: 'reply', text: 'The assistant is not reachable right now. You can keep editing manually.' };
     } finally {
@@ -170,7 +195,7 @@ export function mountChat(root, store, agent) {
       return;
     }
     const previous = messages.find((m) => m.type === 'proposal' && !m.status && store.getState().proposal?.ops === m.ops);
-    const staged = store.proposeChanges({ ops: response.ops, summary: response.summary });
+    const staged = store.proposeChanges({ ops: response.ops, summary: response.summary, signed: response.signed ?? null });
     if (!staged.ok) {
       push({ role: 'assistant', type: 'text', text: `I could not suggest that on the current design: ${friendlyError(staged.error)}` });
       return;

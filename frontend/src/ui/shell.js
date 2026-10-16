@@ -2,6 +2,7 @@
 // save status), collapsible side panels, the 3D toolbar, the proposal preview badge,
 // mobile tabs and keyboard shortcuts. Reads store state; changes it only through the
 // store's own methods (undo/redo, view toggles).
+import { confirmProposal } from '../chat/confirm.js';
 import { el } from '../editor/fields.js';
 import { openDialog } from './dialog.js';
 import { icon } from './icons.js';
@@ -125,7 +126,10 @@ function bindPreviewBadge(badge, store) {
     const cancel = el('button', { className: 'btn btn--secondary btn--sm', text: 'Cancel', attrs: { type: 'button', 'data-testid': 'preview-cancel' } });
     const apply = el('button', { className: 'btn btn--primary btn--sm', text: 'Apply changes', attrs: { type: 'button', 'data-testid': 'preview-apply' } });
     cancel.addEventListener('click', () => store.cancelProposal());
-    apply.addEventListener('click', () => store.applyProposal());
+    apply.addEventListener('click', () => {
+      apply.disabled = true;
+      confirmProposal(store).finally(() => { apply.disabled = false; });
+    });
     children.push(el('span', { className: 'preview-badge__actions' }, [cancel, apply]));
     badge.replaceChildren(...children);
   };

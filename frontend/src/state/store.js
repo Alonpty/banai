@@ -129,13 +129,14 @@ export function createStore({ design, revision = 1, catalog }) {
      * Stage suggested changes WITHOUT committing them. The ops are dry-run on a copy;
      * invalid ops are rejected and nothing is stored. Returns { ok } or { ok:false, error }.
      */
-    proposeChanges({ ops, summary = [] }) {
+    proposeChanges({ ops, summary = [], signed = null }) {
       const result = tryApply(ops);
       if (!result.ok) return result;
       commit({
         proposal: {
           ops,
           summary,
+          signed, // the server-signed proposal (AI agent), applied through the backend
           baseRevision: state.revision,
           previewDesign: result.design,
           diff: diffDesigns(state.design, result.design),
@@ -147,20 +148,39 @@ export function createStore({ design, revision = 1, catalog }) {
       return { ok: true };
     },
 
-    /** Commit the pending proposal. Rejected (code STALE) if the design changed since. */
-    applyProposal() {
+    /**
+     * Commit the pending proposal. Rejected (code STALE) if the design changed since.
+     * `serverDesign` is the authoritative result from POST /api/proposals/apply for a
+     * signed proposal; it is re-validated here before it is committed.
+     */
+    applyProposal({ serverDesign } = {}) {
       const { proposal } = state;
       if (!proposal) return { ok: false, error: { code: 'NO_PROPOSAL' } };
       if (proposal.stale || proposal.baseRevision !== state.revision) {
         if (!proposal.stale) commit({ proposal: { ...proposal, stale: true } });
         return { ok: false, error: { code: 'STALE' } };
       }
-      const result = tryApply(proposal.ops);
+      let result;
+      if (serverDesign) {
+        try {
+          result = { ok: true, design: applyOps(serverDesign, [], state.catalog) };
+        } catch (error) {
+          if (error instanceof DomainError) return { ok: false, error };
+          throw error;
+        }
+      } else {
+        result = tryApply(proposal.ops);
+      }
       if (!result.ok) return result;
       pushHistory(state.design);
       state = deepFreeze({ ...state, proposal: null, proposalOutcome: { ops: proposal.ops, result: 'applied' } });
       commitDesign(result.design);
       return { ok: true };
+    },
+
+    /** The server reported the proposal as stale (409): it can no longer be applied. */
+    markProposalStale() {
+      if (state.proposal && !state.proposal.stale) commit({ proposal: { ...state.proposal, stale: true } });
     },
 
     /** Discard the pending proposal (client-only; the committed design is untouched). */
