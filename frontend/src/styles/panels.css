@@ -9,6 +9,23 @@
 #chat-panel .chat__footer { border-top: 1px solid var(--color-border); background: var(--color-surface-raised); }
 #chat-panel .chat__bubble--user { background: #eef3ff; border-color: #dce7ff; color: var(--color-ink); }
 #chat-panel .proposal { border-color: var(--color-accent-line); background: #f8fbff; }
+.chat__context:empty { display: none; }
+.chat__context { padding: 0 0 8px; }
+.context-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 6px 6px 6px 10px;
+  border-radius: 999px;
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  font-size: 12px;
+}
+.context-chip span:nth-child(2) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.context-chip__label { font-weight: 700; }
+.context-chip__clear { display: grid; place-items: center; width: 18px; height: 18px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--color-accent); cursor: pointer; }
+.context-chip__clear:hover { background: rgba(47, 111, 237, 0.15); }
 .workspace[data-left="closed"] .side--left .side__toggle--float { position: static; margin: 10px auto 0; }
 
 /* ---------- Inspector ---------- */

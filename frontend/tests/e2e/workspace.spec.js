@@ -7,9 +7,11 @@ const ok = (data) => ({ status: 200, contentType: 'application/json', body: JSON
 const MOVE_SHELF = [{ op: 'modify_shelf', id: 'shf_l2', y: 950 }];
 
 async function mockAgent(page, { ops = MOVE_SHELF } = {}) {
+  const calls = [];
   await page.route('**/api/health', (route) => route.fulfill(ok({ status: 'ok', env: 'e2e', agent: true })));
   await page.route('**/api/chat', (route) => {
     const body = route.request().postDataJSON();
+    calls.push(body);
     return route.fulfill(ok({
       reply: 'Here is my proposal.',
       proposal: {
@@ -24,6 +26,7 @@ async function mockAgent(page, { ops = MOVE_SHELF } = {}) {
     design.compartments[0].shelves.find((s) => s.id === 'shf_l2').y = 950;
     return route.fulfill(ok({ design, revision: body.revision + 1 }));
   });
+  return calls;
 }
 
 const state = (page) => page.evaluate(() => {
@@ -78,6 +81,24 @@ test.describe('UX: the chat proposal is previewed in 3D', () => {
     expect(after.design).toEqual(before.design);
     expect(after.revision).toBe(before.revision);
     expect(after.proposal).toBeNull();
+  });
+
+  test('the selected part is shown as a chip and sent with the message ("this")', async ({ page }) => {
+    await page.unrouteAll();
+    const calls = await mockAgent(page);
+    await page.reload();
+    await page.getByTestId('entry-basic').click();
+    await page.waitForFunction(() => window.__banai?.viewer.meshOf('shf_l1'));
+    await page.evaluate(() => window.__banai.store.select('shf_l2'));
+    await expect(page.getByTestId('context-chip')).toContainText('Shelf 2 · Left section');
+    await page.getByTestId('chat-language-en').click();
+    await page.getByTestId('chat-input').fill('Move this 15 cm higher');
+    await page.getByTestId('chat-send').click();
+    await expect(page.getByTestId('proposal-card')).toBeVisible();
+    expect(calls.at(-1).selection).toEqual({ id: 'shf_l2', kind: 'shelf' });
+    await page.getByTestId('context-chip').getByRole('button').click();
+    await expect(page.getByTestId('context-chip')).toHaveCount(0);
+    expect((await state(page)).selection).toBeNull();
   });
 
   test('a manual edit while a proposal is pending makes it stale (it cannot overwrite)', async ({ page }) => {

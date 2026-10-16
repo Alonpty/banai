@@ -18,6 +18,7 @@ import { installRipple } from './ui/ripple.js';
 import { mountRoomControls } from './ui/roomControls.js';
 import { mountShell } from './ui/shell.js';
 import { mountStructureNav } from './ui/structureNav.js';
+import { labelOf } from './ui/naming.js';
 
 function showError(message) {
   const banner = document.getElementById('error-banner');
@@ -78,8 +79,10 @@ async function boot() {
   // The agent is optional: without an OpenAI key on the server the panel says so honestly.
   const agent = health?.data.agent === true
     ? ({ messages, language: chatLanguage }) => {
-      const { design, revision } = store.getState();
-      return sendChat({ messages, design, revision, language: chatLanguage });
+      const { design, revision, selection } = store.getState();
+      // The selected part is sent along, so "move this 15 cm higher" refers to it.
+      const selected = selection && selection.kind !== 'carcass' ? { id: selection.id, kind: selection.kind } : null;
+      return sendChat({ messages, design, revision, language: chatLanguage, ...(selected && { selection: selected }) });
     }
     : null;
   const language = createLanguage();
@@ -111,7 +114,12 @@ async function boot() {
       applying = false;
     }
   };
-  const chat = mountChat(document.getElementById('chat-panel'), { model: chatModel, onConfirm: confirmProposal, language });
+  const getContext = () => {
+    const { design, selection } = store.getState();
+    if (!agent || !selection || selection.kind === 'carcass') return null;
+    return { label: labelOf(design, selection.id), clear: () => store.select(null) };
+  };
+  const chat = mountChat(document.getElementById('chat-panel'), { model: chatModel, onConfirm: confirmProposal, language, getContext });
   chatModel.subscribe(linkProposalPreview(chatModel, store));
   // A manual edit changes the revision, which may turn a pending proposal stale.
   store.subscribe(() => chat.refresh());

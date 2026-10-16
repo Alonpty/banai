@@ -93,3 +93,13 @@ proposal → suggested changes. Items are numbered bottom → top. Internal ids 
   (with handles), mirror, room, Save/Render dialogs. The team's specs (start screen, chat, agent,
   voice, look and feel) run unchanged except where they referred to the removed "Show interior"
   checkbox (now the Interior toolbar button) and the UI body font (now Inter).
+
+## Agent extras (branch `voice`, on top of the team's agent)
+- **Selection context ("this"):** `/api/chat` accepts an optional `selection` `{id, kind}`
+  (validated). The prompt gets a "Customer's selection" section with a readable name, so "move this
+  15 cm higher" works. The chat shows a "Selected: Shelf 2 · Left section ×" chip above the composer.
+- **Section names:** the derived facts include each compartment's UI name (Left / Middle / Right
+  section), so "the left section" maps to the right id.
+- **Defaults and directions** (from the live evaluation): new drawers / shelves / rails use default
+  sizes instead of a clarifying question; "N cm higher/lower" (למעלה/למטה) changes y by ±N cm.
+- Live check after the change (real model, 6 cases x 2 rounds): 12/12 correct.
