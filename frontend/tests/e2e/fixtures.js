@@ -15,10 +15,14 @@ export const test = base.extend({
 
 export { expect };
 
-export async function openDesigner(page) {
+export async function openDesigner(page, { start = 'basic' } = {}) {
   await page.goto('/');
   await page.waitForFunction(() => window.__banai?.viewer.meshOf('shf_l1'));
+  if (start === 'basic') await page.getByRole('button', { name: 'Start from basic wardrobe' }).click();
 }
+
+/** Switch the 3D view to the interior (doors hidden). */
+export const showInterior = (page) => page.getByTestId('view-interior').click();
 
 export const selection = (page) => page.evaluate(() => window.__banai.store.getState().selection);
 
@@ -34,7 +38,7 @@ export async function clickComponent(page, componentId) {
   await page.mouse.click(point.x, point.y);
 }
 
-/** Share of canvas pixels that differ from the background colour. */
+/** Share of canvas pixels that are drawn (the canvas background is transparent). */
 export const paintedRatio = (page) => page.evaluate(() => {
   const source = document.querySelector('#viewer canvas');
   const copy = document.createElement('canvas');
@@ -45,7 +49,7 @@ export const paintedRatio = (page) => page.evaluate(() => {
   const { data } = context.getImageData(0, 0, copy.width, copy.height);
   let painted = 0;
   for (let i = 0; i < data.length; i += 4) {
-    if (Math.abs(data[i] - 236) + Math.abs(data[i + 1] - 238) + Math.abs(data[i + 2] - 236) > 12) painted += 1;
+    if (data[i + 3] > 0) painted += 1;
   }
   return painted / (data.length / 4);
 });

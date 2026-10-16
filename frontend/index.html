@@ -7,30 +7,91 @@
     <link rel="stylesheet" href="/src/styles/index.css" />
   </head>
   <body>
-    <header class="topbar">
-      <h1 class="topbar__title">BanAI <span>Wardrobe Designer</span></h1>
-      <div class="topbar__actions">
-        <label class="toggle">
-          <input type="checkbox" id="toggle-interior" />
-          <span>Show interior</span>
-        </label>
-        <span class="topbar__units">cm</span>
+    <header class="appbar">
+      <div class="appbar__brand">
+        <span class="brand-mark" aria-hidden="true">B</span>
+        <span class="appbar__name">BanAI</span>
+      </div>
+      <div class="project-pill" id="project-name" title="Design name">Untitled wardrobe</div>
+      <div class="appbar__spacer"></div>
+      <div class="appbar__group" role="group" aria-label="History">
+        <button type="button" class="btn btn--secondary" id="undo" aria-label="Undo" title="Undo (Ctrl+Z)" disabled></button>
+        <button type="button" class="btn btn--secondary" id="redo" aria-label="Redo" title="Redo (Ctrl+Shift+Z)" disabled></button>
+      </div>
+      <span class="save-status" id="save-status" data-state="local" role="status" aria-live="polite">Not saved yet</span>
+      <div class="appbar__group">
+        <button type="button" class="btn btn--secondary" id="preview-room" aria-label="Preview in room"></button>
+        <button type="button" class="btn btn--primary" id="share" aria-label="Share"></button>
       </div>
     </header>
     <div class="banner banner--error" id="error-banner" role="alert" hidden></div>
-    <main class="workspace">
-      <aside class="panel" id="chat-panel" aria-label="AI designer">
-        <h2 class="panel__title">AI Designer</h2>
-        <p class="panel__note">Describe the wardrobe you want, and the agent will propose changes for you to confirm.</p>
-        <div class="empty-state">The conversational design agent is not connected yet (planned for Phase 5). You can design manually in the Properties panel.</div>
+
+    <main class="workspace" id="workspace" data-left="open" data-right="open" data-tab="design">
+      <aside class="side side--left" id="ai-panel" aria-label="Design assistant">
+        <div class="side__header">
+          <div class="side__heading">
+            <h2 class="side__title" id="chat-title"></h2>
+            <p class="side__subtitle">AI assistant + design actions</p>
+          </div>
+          <button type="button" class="btn btn--secondary btn--icon side__toggle" data-panel="left" aria-expanded="true" aria-controls="ai-panel" aria-label="Collapse assistant"></button>
+        </div>
+        <div class="side__body side__body--chat" id="chat-root"></div>
+        <button type="button" class="side__rail" data-panel="left" tabindex="-1" aria-hidden="true">AI Assistant</button>
       </aside>
-      <section class="viewer" id="viewer" aria-label="3D viewer"></section>
-      <aside class="panel panel--properties" id="properties-panel" aria-label="Properties">
-        <h2 class="panel__title">Properties</h2>
-        <p class="panel__hint">Click a component in the 3D view to edit it.</p>
-        <div id="properties-content"></div>
+
+      <section class="stage" aria-label="3D workspace">
+        <div class="stage__view">
+          <div class="viewer" id="viewer" aria-label="3D viewer"></div>
+          <div class="stage__toolbar" id="viewer-toolbar" role="toolbar" aria-label="View"></div>
+          <div class="stage__reset" id="viewer-reset"></div>
+          <div class="preview-badge" id="preview-badge" hidden></div>
+        </div>
+        <nav class="structure" id="structure-nav" aria-label="Wardrobe structure"></nav>
+      </section>
+
+      <aside class="side side--right" id="properties-panel" aria-label="Inspector">
+        <div class="side__header">
+          <div class="side__heading" id="inspector-heading"></div>
+          <button type="button" class="btn btn--secondary btn--icon side__toggle" data-panel="right" aria-expanded="true" aria-controls="properties-panel" aria-label="Collapse inspector"></button>
+        </div>
+        <div class="side__body" id="properties-content"></div>
+        <button type="button" class="side__rail" data-panel="right" tabindex="-1" aria-hidden="true">Properties</button>
       </aside>
     </main>
+
+    <nav class="mobile-tabs" aria-label="Mode">
+      <button type="button" data-tab="design" aria-pressed="true">Design</button>
+      <button type="button" data-tab="ai" aria-pressed="false">Assistant</button>
+      <button type="button" data-tab="properties" aria-pressed="false">Properties</button>
+    </nav>
+
+    <section class="start" id="start-screen" aria-labelledby="start-title" hidden>
+      <div class="start__card">
+        <p class="start__brand"><span class="brand-mark" aria-hidden="true">B</span>BanAI</p>
+        <h1 class="start__title" id="start-title">Design your wardrobe</h1>
+        <p class="start__lead">Tell BanAI what you need. You can change everything afterwards.</p>
+        <form class="start__form" id="start-form">
+          <label class="visually-hidden" for="start-prompt">Describe your wardrobe</label>
+          <textarea id="start-prompt" class="start__prompt" rows="4" maxlength="2000"
+            placeholder="240 cm wide white wardrobe, 3 sections, hanging clothes on the left, drawers in the middle and shelves on the right…"></textarea>
+          <p class="start__error" id="start-error" role="alert"></p>
+          <div class="start__actions">
+            <button type="submit" class="btn btn--primary btn--lg" id="start-ai">Design with AI</button>
+            <button type="button" class="btn btn--secondary btn--lg" id="start-basic">Start from basic wardrobe</button>
+          </div>
+        </form>
+        <p class="start__note" id="start-note"></p>
+      </div>
+    </section>
+
+    <dialog class="dialog" id="dialog" aria-labelledby="dialog-title">
+      <form method="dialog" class="dialog__inner">
+        <h2 class="dialog__title" id="dialog-title"></h2>
+        <div class="dialog__body" id="dialog-body"></div>
+        <div class="dialog__actions" id="dialog-actions"></div>
+      </form>
+    </dialog>
+
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

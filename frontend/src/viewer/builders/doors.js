@@ -20,7 +20,7 @@ export function buildDoors(design, frame, materials) {
         size: [x1 - x0 - 2 * gap, height, t],
         center: [(x0 + x1) / 2, y, t / 2],
         material: materialOf(door),
-        userData: { componentId: door.id, kind: 'door', hingeSide: door.hingeSide },
+        userData: { componentId: door.id, kind: 'door', doorType: 'hinged', hingeSide: door.hingeSide },
       });
     });
   }
@@ -31,7 +31,8 @@ export function buildDoors(design, frame, materials) {
       size: [panelWidth, height, t],
       center: [frame.panel + panelWidth * (i + 0.5), y, i % 2 === 0 ? t / 2 : t * 1.5 + VISUAL.slidingTrackGap],
       material: materialOf(door),
-      userData: { componentId: door.id, kind: 'door' },
+      // Visual only: which way the panel glides when opened (over its neighbour).
+      userData: { componentId: door.id, kind: 'door', doorType: 'sliding', slideDir: i < doors.items.length - 1 ? 1 : -1 },
     }));
   }
 
