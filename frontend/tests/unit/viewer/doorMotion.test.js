@@ -75,3 +75,30 @@ describe('door motion', () => {
     expect(motion.isOpen('dr_a')).toBe(false);
   });
 });
+
+describe('door hardware moves with its door', () => {
+  it('rotates a handle about the same hinge as its panel', () => {
+    const panel = door({ doorType: 'hinged', hingeSide: 'left' });
+    const handle = new THREE.Mesh(new THREE.BoxGeometry(0.014, 0.4, 0.012));
+    handle.position.set(1.25, 1, 0.024); // near the free (right) edge
+    handle.userData = { kind: 'hardware', doorId: 'dr_a' };
+    applyDoorPose(panel, 1, [handle]);
+    expect(handle.rotation.y).toBeCloseTo(-DOOR_OPEN_ANGLE);
+    expect(handle.position.z).toBeGreaterThan(0.5); // swung out with the door
+    applyDoorPose(panel, 0, [handle]);
+    expect(handle.position.toArray()).toEqual([1.25, 1, 0.024]);
+  });
+
+  it('createDoorMotion animates panels together with their tagged parts', () => {
+    const group = new THREE.Group();
+    const panel = door({ doorType: 'sliding', slideDir: 1 });
+    const handle = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.4, 0.01));
+    handle.position.set(1.2, 1, 0.03);
+    handle.userData = { kind: 'hardware', doorId: 'dr_a' };
+    group.add(panel, handle);
+    const motion = createDoorMotion({ durationMs: 0 });
+    motion.toggle('dr_a');
+    motion.tick(16, group);
+    expect(handle.position.x - 1.2).toBeCloseTo(panel.position.x - 1, 5);
+  });
+});

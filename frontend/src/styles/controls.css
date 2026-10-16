@@ -11,7 +11,7 @@
   gap: 4px 10px;
   margin: 10px 0;
 }
-.field--select { grid-template-columns: minmax(0, 1fr) 150px; }
+.field--select { grid-template-columns: minmax(0, 1fr) 172px; }
 .field--stack { display: block; }
 .field--stack .field__label { margin-bottom: 8px; }
 .field__label { display: block; color: #66717f; font-size: 12px; }
@@ -41,7 +41,7 @@
   color: #26303d;
   font-variant-numeric: tabular-nums;
 }
-select.field__input { padding-right: 6px; cursor: pointer; }
+select.field__input { padding-right: 40px; cursor: pointer; } /* text stays clear of the native chevron */
 .field__input:focus { outline: none; }
 select.field__input:focus { border-color: #b7cafb; box-shadow: 0 0 0 3px #edf3ff; }
 input.field__input[inputmode] { padding-right: 4px; text-align: right; }

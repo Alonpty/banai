@@ -3,7 +3,6 @@
 // mobile tabs and keyboard shortcuts. Reads store state; changes it only through the
 // store's own methods (undo/redo, view toggles).
 import { el } from '../editor/fields.js';
-import { openDialog } from './dialog.js';
 import { icon } from './icons.js';
 import { PREVIEW_COLORS } from '../viewer/proposalPreview.js';
 
@@ -105,7 +104,7 @@ function legendItem(label, color) {
 }
 
 /** Floating badge over the 3D view while a proposal is previewed (mirrors the card). */
-function bindPreviewBadge(badge, store) {
+function bindPreviewBadge(badge, { onApply, onCancel }) {
   let shown;
   return (state) => {
     const proposal = state.proposal && !state.proposal.stale ? state.proposal : null;
@@ -124,46 +123,24 @@ function bindPreviewBadge(badge, store) {
     }
     const cancel = el('button', { className: 'btn btn--secondary btn--sm', text: 'Cancel', attrs: { type: 'button', 'data-testid': 'preview-cancel' } });
     const apply = el('button', { className: 'btn btn--primary btn--sm', text: 'Apply changes', attrs: { type: 'button', 'data-testid': 'preview-apply' } });
-    cancel.addEventListener('click', () => store.cancelProposal());
-    apply.addEventListener('click', () => store.applyProposal());
+    cancel.addEventListener('click', () => onCancel());
+    apply.addEventListener('click', () => {
+      apply.disabled = true;
+      Promise.resolve(onApply()).finally(() => { apply.disabled = false; });
+    });
     children.push(el('span', { className: 'preview-badge__actions' }, [cancel, apply]));
     badge.replaceChildren(...children);
   };
 }
 
-function shareDialog() {
-  const field = el('input', { className: 'field__input', attrs: { type: 'text', readonly: '', 'aria-label': 'Design link', placeholder: 'https://banai…/#d=…' } });
-  field.disabled = true;
-  openDialog({
-    title: 'Share your design',
-    body: [
-      el('p', { text: 'Secure share links arrive together with cloud saving (Phase 7). Each link will carry its own private access key; nobody can open a design without it.' }),
-      el('div', { className: 'share-row' }, [field, el('button', { className: 'btn btn--secondary', text: 'Copy link', attrs: { type: 'button', disabled: '' } })]),
-      el('p', { className: 'dialog__note', text: 'Coming soon. For now your design lives in this browser tab.' }),
-    ],
-    actions: [{ label: 'Close', variant: 'primary' }],
-  });
-}
-
-function roomPreviewDialog() {
-  openDialog({
-    title: 'Realistic preview',
-    wide: true,
-    body: [
-      el('div', { className: 'render-placeholder' }, [
-        icon('sparkle', { size: 28 }),
-        el('p', { text: 'Photoreal previews arrive in Phase 8.' }),
-      ]),
-      el('p', { className: 'dialog__note', text: 'This image is illustrative. The 3D design and dimensions remain unchanged.' }),
-    ],
-    actions: [{ label: 'Regenerate', variant: 'secondary', disabled: true }, { label: 'Close', variant: 'primary' }],
-  });
-}
-
 const isTyping = (target) => target instanceof HTMLElement
   && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
 
-export function mountShell({ store, viewer }) {
+/**
+ * `onApplyProposal` / `onCancelProposal` are the same actions as the chat's proposal card, so the
+ * 3D badge and the card can never disagree.
+ */
+export function mountShell({ store, viewer, onApplyProposal = () => store.applyProposal(), onCancelProposal = () => store.cancelProposal() }) {
   const workspace = document.getElementById('workspace');
   const panels = bindPanels(workspace);
   const tabs = bindMobileTabs(workspace);
@@ -171,17 +148,15 @@ export function mountShell({ store, viewer }) {
   const redo = document.getElementById('redo');
   decorate(undo, 'undo', 'Undo');
   decorate(redo, 'redo', 'Redo');
-  decorate(document.getElementById('preview-room'), 'room', 'Preview in room');
-  decorate(document.getElementById('share'), 'link', 'Share');
+  decorate(document.getElementById('open-render'), 'image', 'Render');
+  decorate(document.getElementById('open-save'), 'save', 'Save');
   undo.addEventListener('click', () => store.undo());
   redo.addEventListener('click', () => store.redo());
-  document.getElementById('share').addEventListener('click', shareDialog);
-  document.getElementById('preview-room').addEventListener('click', roomPreviewDialog);
   const status = document.getElementById('save-status');
   status.title = 'Cloud saving and autosave arrive in Phase 7.';
 
   const syncToolbar = bindToolbar(document.getElementById('viewer-toolbar'), document.getElementById('viewer-reset'), store, viewer);
-  const syncBadge = bindPreviewBadge(document.getElementById('preview-badge'), store);
+  const syncBadge = bindPreviewBadge(document.getElementById('preview-badge'), { onApply: onApplyProposal, onCancel: onCancelProposal });
 
   document.addEventListener('keydown', (event) => {
     if (isTyping(event.target) || document.querySelector('dialog[open]')) return;
