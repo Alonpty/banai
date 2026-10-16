@@ -5,11 +5,12 @@ import '@fontsource/dm-sans/400.css';
 import '@fontsource/dm-sans/500.css';
 import '@fontsource/dm-sans/600.css';
 import '@fontsource/dm-sans/700.css';
-import { getCatalog, getDefaultDesign } from './api/client.js';
+import { applyProposal, getCatalog, getDefaultDesign, getHealth, sendChat } from './api/client.js';
 import { createStore } from './state/store.js';
 import { mountPanel } from './editor/panel.js';
 import { createViewer } from './viewer/viewer.js';
 import { createChatModel } from './chat/chatModel.js';
+import { createLanguage } from './chat/i18n.js';
 import { mountChat } from './chat/chatPanel.js';
 import { mountStartScreen } from './entry/startScreen.js';
 import { createSaveDialog } from './share/saveDialog.js';
@@ -41,8 +42,10 @@ async function boot() {
   installRipple();
   let catalog;
   let initial;
+  let health;
   try {
-    [catalog, initial] = await Promise.all([getCatalog(), getDefaultDesign()]);
+    // A failed health check only means "agent unknown": the editor still works without it.
+    [catalog, initial, health] = await Promise.all([getCatalog(), getDefaultDesign(), getHealth().catch(() => null)]);
   } catch {
     showError('Could not reach the design service. Please check your connection and reload.');
     return;
@@ -54,12 +57,37 @@ async function boot() {
   mountPanel(document.getElementById('properties-content'), store);
   bindDialogs();
 
-  const chatModel = createChatModel({ getRevision: () => store.getState().revision });
-  // The agent is not connected yet, so a proposal can only come from the dev-only demo below.
-  const chat = mountChat(document.getElementById('chat-panel'), {
-    model: chatModel,
-    onConfirm: () => chatModel.resolveProposal('The AI agent is not connected yet, so nothing was applied.'),
-  });
+  // The agent is optional: without an OpenAI key on the server the panel says so honestly.
+  const agent = health?.data.agent === true
+    ? ({ messages, language: chatLanguage }) => {
+      const { design, revision } = store.getState();
+      return sendChat({ messages, design, revision, language: chatLanguage });
+    }
+    : null;
+  const language = createLanguage();
+  const chatModel = createChatModel({ getRevision: () => store.getState().revision, agent, getLanguage: language.get });
+  const t = () => language.strings();
+
+  let applying = false;
+  const confirmProposal = async (proposal) => {
+    if (applying) return;
+    if (!proposal.signed) {
+      chatModel.resolveProposal(t().notApplied);
+      return;
+    }
+    applying = true;
+    const { design, revision } = store.getState();
+    try {
+      const result = await applyProposal({ design, revision, proposal: proposal.signed, language: language.get() });
+      store.replaceDesign(result.design, result.revision);
+      chatModel.resolveProposal(t().applied);
+    } catch (error) {
+      chatModel.resolveProposal(error?.code === 'STALE' ? t().stale : t().notApplied);
+    } finally {
+      applying = false;
+    }
+  };
+  const chat = mountChat(document.getElementById('chat-panel'), { model: chatModel, onConfirm: confirmProposal, language });
   // A manual edit changes the revision, which may turn a pending proposal stale.
   store.subscribe(() => chat.refresh());
 
@@ -70,7 +98,7 @@ async function boot() {
   mountStartScreen({
     onChoose: (entry) => {
       // All three entry points open the same editor; the chat ones also focus the composer.
-      if (entry.id !== 'basic') chat.focus(entry.composerHint);
+      if (entry.focusesChat) chat.focus(entry.id);
     },
   });
 }

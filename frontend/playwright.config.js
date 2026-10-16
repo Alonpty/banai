@@ -24,7 +24,8 @@ export default defineConfig({
       command: `uv run uvicorn app.main:app --port ${API_PORT}`,
       cwd: '../backend',
       url: `http://localhost:${API_PORT}/api/health`,
-      env: { APP_ENV: 'e2e', CORS_ORIGINS: `http://localhost:${WEB_PORT}` },
+      // No key: E2E never calls OpenAI (it would read backend/.env otherwise). Agent tests mock /api.
+      env: { APP_ENV: 'e2e', CORS_ORIGINS: `http://localhost:${WEB_PORT}`, OPENAI_API_KEY: '' },
       reuseExistingServer: false,
       timeout: 60_000,
     },
