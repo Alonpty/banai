@@ -181,11 +181,14 @@ export function mountChat(root, store, agent) {
     }));
   };
 
-  async function submit(text, { mode = 'edit' } = {}) {
+  /** Send one message to the agent. Returns the agent's answer (used by the voice layer). */
+  async function submit(text, { mode = 'edit', source = 'text' } = {}) {
     const message = String(text ?? '').trim();
-    if (!message || busy) return;
+    if (!message) return { kind: 'empty' };
+    if (busy) return { kind: 'busy' };
     const state = store.getState();
-    const context = state.selection && state.selection.kind !== 'carcass' ? labelOf(state.design, state.selection.id) : null;
+    const selected = state.selection && state.selection.kind !== 'carcass' ? labelOf(state.design, state.selection.id) : null;
+    const context = [source === 'voice' ? 'Voice' : null, selected].filter(Boolean).join(' · ') || null;
     const history = historyOf(messages);
     push({ role: 'user', type: 'text', text: message, context });
     busy = true;
@@ -202,17 +205,18 @@ export function mountChat(root, store, agent) {
     }
     if (response.kind === 'out_of_scope') {
       push({ role: 'assistant', type: 'scope', text: response.text });
-      return;
+      return response;
     }
     if (response.kind !== 'proposal') {
       push({ role: 'assistant', type: response.kind === 'clarification' ? 'clarification' : 'text', text: response.text });
-      return;
+      return response;
     }
     const previous = messages.find((m) => m.type === 'proposal' && !m.status && store.getState().proposal?.ops === m.ops);
     const staged = store.proposeChanges({ ops: response.ops, summary: response.summary, signed: response.signed ?? null });
     if (!staged.ok) {
-      push({ role: 'assistant', type: 'text', text: `I could not suggest that on the current design: ${friendlyError(staged.error)}` });
-      return;
+      const textReply = `I could not suggest that on the current design: ${friendlyError(staged.error)}`;
+      push({ role: 'assistant', type: 'text', text: textReply });
+      return { kind: 'reply', text: textReply };
     }
     if (previous) previous.status = 'superseded';
     // Interior changes would be hidden behind closed doors: show the inside for the preview.
@@ -221,6 +225,7 @@ export function mountChat(root, store, agent) {
       .some((id) => !id.startsWith('dr_') && id !== 'carcass');
     if (touchesInterior && store.getState().ui.doorsVisible) store.setDoorsVisible(false);
     push({ role: 'assistant', type: 'proposal', text: response.text, lines: response.summary ?? [], ops: response.ops });
+    return response;
   }
 
   form.addEventListener('submit', (event) => {
@@ -258,5 +263,5 @@ export function mountChat(root, store, agent) {
   renderQuick(store.getState());
   renderList();
 
-  return { submit, focus: () => input.focus() };
+  return { submit, focus: () => input.focus(), composer: form };
 }

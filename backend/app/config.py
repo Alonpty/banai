@@ -21,11 +21,15 @@ class Settings(BaseSettings):
     openai_timeout_seconds: float = 60.0
     agent_max_repairs: int = 2
     agent_rate_limit_per_minute: int = 20
+    # Voice (GPT-Live, client delegation). Uses the same OPENAI_API_KEY.
+    openai_voice_model: str = "gpt-live-1"
+    openai_voice: str = "marin"
+    voice_sessions_per_minute: int = 6
     # HMAC key for signed proposals. Empty = a random per-process key (fine locally;
     # set a fixed value per environment in deployment).
     proposal_signing_key: str = ""
 
-    @field_validator("openai_chat_model", "openai_reasoning_effort", mode="before")
+    @field_validator("openai_chat_model", "openai_reasoning_effort", "openai_voice_model", "openai_voice", mode="before")
     @classmethod
     def _empty_means_default(cls, value: object, info) -> object:
         # `OPENAI_CHAT_MODEL=` (blank, as in .env.example) keeps the default.

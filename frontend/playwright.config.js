@@ -28,7 +28,8 @@ export default defineConfig({
       command: `uv run uvicorn app.main:app --port ${API_PORT}`,
       cwd: '../backend',
       url: `http://localhost:${API_PORT}/api/health`,
-      env: { APP_ENV: 'e2e', CORS_ORIGINS: `http://localhost:${WEB_PORT}` },
+      // No AI key in E2E: the assistant uses the deterministic demo (env beats backend/.env).
+      env: { APP_ENV: 'e2e', CORS_ORIGINS: `http://localhost:${WEB_PORT}`, OPENAI_API_KEY: '' },
       reuseExistingServer: false,
       timeout: 60_000,
     },

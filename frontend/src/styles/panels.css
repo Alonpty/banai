@@ -111,6 +111,41 @@
 }
 .chat__input:focus { outline: none; border-color: #b7cafb; box-shadow: 0 0 0 3px #edf3ff; }
 .chat__send { width: 46px; height: auto; padding: 0; border-radius: 12px; }
+.chat__mic {
+  width: 46px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface-raised);
+  color: var(--color-ink-2);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.chat__mic:hover { border-color: var(--color-accent); color: var(--color-accent); }
+.chat__mic[data-state="connecting"] { color: var(--color-accent); animation: blink 1.2s infinite; }
+.chat__mic[data-state="listening"] { border-color: #d9534f; background: #d9534f; color: #fff; box-shadow: 0 0 0 4px rgba(217, 83, 79, 0.15); }
+.chat__mic:focus-visible { outline: var(--focus-outline); outline-offset: 2px; }
+.voice-caption {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface-2);
+  font-size: var(--text-sm);
+}
+.voice-caption[hidden] { display: none; }
+.voice-caption--live { border-color: #f1c9c7; background: #fff7f6; }
+.voice-caption--error { border-color: #f3c4c2; background: var(--color-danger-soft); color: var(--color-danger); }
+.voice-caption__label { display: inline-flex; align-items: center; gap: 6px; color: var(--color-muted); font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+.voice-caption__text { color: var(--color-ink); }
+.voice-dot { width: 8px; height: 8px; border-radius: 50%; background: #d9534f; }
+.voice-caption--live .voice-dot { animation: pulse-red 1.4s infinite; }
+@keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(217, 83, 79, 0.5); } 100% { box-shadow: 0 0 0 6px rgba(217, 83, 79, 0); } }
 .quick-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .chip {
   padding: 6px 9px;

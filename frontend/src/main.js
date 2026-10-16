@@ -10,6 +10,7 @@ import { mountRoomControls } from './ui/roomControls.js';
 import { mountShell } from './ui/shell.js';
 import { mountStartScreen } from './ui/startScreen.js';
 import { mountStructureNav } from './ui/structureNav.js';
+import { mountVoiceControls } from './voice/voiceControls.js';
 import { createViewer } from './viewer/viewer.js';
 
 function showError(message) {
@@ -38,6 +39,8 @@ async function boot() {
   // The real AI agent when the server has an OpenAI key; otherwise the labelled demo.
   const agent = createAgentClient({ agentAvailable: health.data.agent === true });
   const chat = mountChat(document.getElementById('chat-root'), store, agent);
+  // Voice (GPT-Live) when the server has an AI key; spoken requests use the same chat flow.
+  if (health.data.voice === true && agent.mode === 'live') mountVoiceControls({ chat });
   mountStartScreen({ chat, shell, notice: agent.mode === 'demo' ? agent.notice : '' });
   if (import.meta.env.DEV) {
     window.__banai = Object.freeze({ store, viewer, chat });

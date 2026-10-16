@@ -47,3 +47,6 @@ export const postChat = (payload, fetchImpl = fetch) => postJson('/api/chat', pa
 
 /** Apply a signed proposal: { design, revision, proposal } -> { design, revision } or 409 STALE. */
 export const postApplyProposal = (payload, fetchImpl = fetch) => postJson('/api/proposals/apply', payload, fetchImpl);
+
+/** Voice: exchange the browser's WebRTC offer for GPT-Live's answer (the API key stays on the server). */
+export const postVoiceSession = (sdp, fetchImpl = fetch) => postJson('/api/voice/session', { sdp }, fetchImpl);
