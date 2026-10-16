@@ -10,7 +10,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.api.agent import get_llm_client
-from app.api.voice import DEFAULT_TRANSCRIBE_MODEL, DEFAULT_TTS_VOICE, MAX_AUDIO_BYTES
+from app.api.voice import DEFAULT_TRANSCRIBE_MODEL, DEFAULT_TTS_VOICE, MAX_AUDIO_BYTES, TRANSCRIBE_PROMPT
 from app.config import get_settings, get_signing_key
 from app.main import create_app
 from app.services import signing
@@ -69,13 +69,18 @@ def test_transcribe_returns_the_text_without_a_language_hint(client_for):
     response = client_for(fake).post("/api/voice/transcribe?language=en", content=b"audio-bytes", headers=WEBM)
     assert response.json() == {"success": True, "data": {"text": "תוסיף מדף"}}
     _, call = fake.calls[0]
-    assert call == {"model": DEFAULT_TRANSCRIBE_MODEL, "file": ("speech.webm", b"audio-bytes", "audio/webm")}
+    assert call == {
+        "model": DEFAULT_TRANSCRIBE_MODEL,
+        "file": ("speech.webm", b"audio-bytes", "audio/webm"),
+        "prompt": TRANSCRIBE_PROMPT,  # bilingual domain vocabulary, no language hint
+    }
 
 
 def test_transcribe_model_is_configurable(client_for):
     fake = FakeAudio()
     client_for(fake, OPENAI_TRANSCRIBE_MODEL="gpt-transcribe").post("/api/voice/transcribe", content=b"x", headers=WEBM)
     assert fake.calls[0][1]["model"] == "gpt-transcribe"
+    assert "prompt" not in fake.calls[0][1]  # only sent to models documented to accept it
 
 
 @pytest.mark.parametrize(("headers", "body", "status", "code"), [
@@ -135,6 +140,13 @@ def test_speech_returns_mp3_for_a_signed_reply(client_for):
     assert response.content == b"ID3fake-mp3"
     _, call = fake.calls[0]
     assert call["voice"] == DEFAULT_TTS_VOICE and call["input"] == "הנה ההצעה שלי."
+    assert "Hebrew" in call["instructions"]
+
+
+def test_hebrew_unit_abbreviations_are_spoken_as_words(client_for):
+    fake = FakeAudio()
+    client_for(fake).post("/api/voice/speech", json=speech_body('הרוחב יהיה 240 ס"מ ועובי 18 מ״מ.', "he"))
+    assert fake.calls[0][1]["input"] == "הרוחב יהיה 240 סנטימטר ועובי 18 מילימטר."
 
 
 def test_speech_only_reads_the_agents_own_replies(client_for):

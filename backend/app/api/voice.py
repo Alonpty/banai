@@ -32,7 +32,28 @@ MAX_AUDIO_BYTES = 1_000_000
 MAX_TRANSCRIPT_CHARS = 2000  # the chat message limit
 MAX_SPEECH_CHARS = 1000
 AUDIO_TYPES = {"audio/webm": "webm", "audio/ogg": "ogg", "audio/mp4": "mp4", "audio/wav": "wav", "audio/mpeg": "mp3"}
-SPEECH_STYLE = "Speak as a calm, friendly furniture designer. Clear and concise."
+# Measured on real Hebrew audio (2026-10-16): English instructions that name Hebrew speak it most
+# clearly; instructions written in Hebrew made the speech worse.
+SPEECH_STYLE = (
+    "Speak in the language of the text. For Hebrew, use fluent native Israeli Hebrew pronunciation. "
+    "Calm, friendly furniture designer; clear and concise."
+)
+# Domain vocabulary in both languages: fixes Hebrew misrecognitions and writes sizes as digits,
+# without forcing a language (English speech stays English).
+TRANSCRIBE_PROMPT = (
+    "שיחה על עיצוב ארון בגדים, בעברית או באנגלית: ארון, תא, מדף, מגירה, מוט תלייה, מחיצה, "
+    "דלתות הזזה, דלתות ציר, רוחב, גובה, עומק, סנטימטר, מט, מבריק. "
+    "Wardrobe design in Hebrew or English: shelf, drawer, hanging rail, sliding doors, width, cm."
+)
+PROMPTABLE_MODELS = {"gpt-4o-transcribe", "gpt-4o-mini-transcribe", "whisper-1"}
+# Abbreviations TTS reads letter by letter; spoken as words instead.
+SPOKEN_UNITS = {'ס"מ': "סנטימטר", "ס״מ": "סנטימטר", 'מ"מ': "מילימטר", "מ״מ": "מילימטר"}
+
+
+def spoken(text: str) -> str:
+    for short, word in SPOKEN_UNITS.items():
+        text = text.replace(short, word)
+    return text
 
 
 
@@ -70,13 +91,15 @@ async def transcribe(
         return localized(422, "NO_SPEECH", language)
     # No language hint: the customer may speak either language, and the chat switches to whichever
     # the transcript is written in. `language` only localizes the error messages.
+    model = _model(settings.openai_transcribe_model, DEFAULT_TRANSCRIBE_MODEL)
     try:
         # The OpenAI client is synchronous: run it off the event loop, or one slow upstream call
         # would stall every other request (health checks included).
         result = await run_in_threadpool(
             client.audio.transcriptions.create,
-            model=_model(settings.openai_transcribe_model, DEFAULT_TRANSCRIBE_MODEL),
+            model=model,
             file=(f"speech.{AUDIO_TYPES[media_type]}", audio, media_type),
+            **({"prompt": TRANSCRIBE_PROMPT} if model in PROMPTABLE_MODELS else {}),
         )
     except Exception:  # never echo upstream error text to the customer
         log.exception("transcription failed")
@@ -109,7 +132,7 @@ def speech(
         result = client.audio.speech.create(
             model=_model(settings.openai_tts_model, DEFAULT_TTS_MODEL),
             voice=_model(settings.openai_tts_voice, DEFAULT_TTS_VOICE),
-            input=request.text, instructions=SPEECH_STYLE, response_format="mp3",
+            input=spoken(request.text), instructions=SPEECH_STYLE, response_format="mp3",
         )
         audio = result.read() if hasattr(result, "read") else result.content
     except Exception:
