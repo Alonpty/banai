@@ -1,5 +1,11 @@
 # UX: one wardrobe workspace (branch `uxui`)
 
+> Rebased onto `dev` after #3 (Material 3 UI) and #5 (AI agent). The workspace below is built
+> AROUND the team's components: their chat panel (agent, Hebrew/English, voice, proposal card),
+> start screen with three entry points, Save / Render dialogs, BanAI logo, door hardware and
+> picking fix are kept as they are. Their Material 3 colour roles are mapped onto this palette in
+> `styles/tokens.css` ("Bridge"), so those components share the reference look.
+
 The editor is one workspace around one wardrobe: **assistant** (left), **3D** (centre,
 dominant, with the structure bar under it), **contextual inspector** (right), as
 floating cards. Visual target: the `banai_ui_reference.html` prototype (blue accent for
@@ -34,14 +40,13 @@ id-based): **added** = translucent sage ghost + outline, **changed** = ochre out
 Cancel / Apply; `proposalOutcome` keeps them in sync. Interior changes switch the view to
 Interior so they are visible.
 
-## Assistant
-- Message types: conversation, clarification, suggested-changes card, confirmation.
-- The selected component is shown as a chip ("Selected: Shelf 2 · Left section") and sent with
-  every message, so "move this 15 cm higher" works without ids.
-- **Demo mode (until Phase 5):** `chat/demoAgent.js` is a small rule-based interpreter, clearly
-  labelled "Demo assistant". It returns the same shape the real agent will
-  (`{ kind, text, ops, summary }`) and its proposals go through the same preview/approval path.
-  Phase 5 replaces `chat/agentClient.js` with `POST /api/chat`.
+## Assistant (the team's chat panel)
+- The chat (`chat/chatPanel.js`, `chatModel.js`) is unchanged. `main.js` links its pending proposal
+  to the store: `store.proposeChanges({ ops, signed })` dry-runs the signed ops on a copy, so the
+  proposal is previewed in 3D while the card is shown. Confirm (card) and Apply (3D badge) both call
+  the same `confirmProposal`, which applies through `POST /api/proposals/apply` and commits the
+  server's design with `store.applyProposal({ serverDesign })` (one undo step). Cancel in either
+  place drops both. A manual edit while pending makes both stale.
 
 ## View-only extras (never part of the design, never in undo history)
 - **Opening doors:** clicking a door swings it open on its hinge (sliding panels glide
@@ -68,21 +73,23 @@ partition → divider, carcass → wardrobe body, rail → hanging rail, overrid
 proposal → suggested changes. Items are numbered bottom → top. Internal ids are never shown.
 
 ## Workspace tools
-- **Top bar:** project name, save status, Undo / Redo (Ctrl+Z, Ctrl+Shift+Z / Ctrl+Y), Preview in
-  room, Share. Save, Share and the room preview are **not connected yet** (Phases 7 and 8): the
-  status reads "Not saved yet" and the dialogs say so. No fake links or images are produced.
+- **Top bar:** BanAI logo, project name, save status, Undo / Redo (Ctrl+Z, Ctrl+Shift+Z / Ctrl+Y),
+  and the team's Render and Save dialogs (not connected until Phases 7–8; they say so).
 - **3D toolbar:** Front, Interior, Dimensions (overall W/H/D with nothing selected; only the
   selection's measurements otherwise), Reset view.
 - **Structure strip:** proportional sections and dividers; click to select.
 - **Panels** collapse to 48 px rails (remembered per browser); the canvas grows.
-- **Start screen:** "Design with AI" (prompt → first proposal → approve) or "Start from basic
-  wardrobe".
+- **Start screen:** the team's three entry points (Guide me / Describe it / basic wardrobe); the chat
+  options open and focus the assistant panel.
 - **Responsive:** ≤ 1100 px narrower panels and icon-only toolbar; ≤ 760 px one area at a time
   with Design / Assistant / Properties tabs.
 
 ## Tests
-- Unit: `tests/unit/state/proposal.test.js` (proposal, stale, undo/redo, diff),
-  `tests/unit/ui/naming.test.js`, `tests/unit/chat/demoAgent.test.js` (every demo proposal is
-  validated by the domain engine), `duplicateOps` in `opsFromForm.test.js`.
-- E2E: `tests/e2e/workspace.spec.js` (onboarding, selection context, preview/apply/cancel,
-  stale, undo/redo, structure strip, panels, dimensions, duplicate, dialogs).
+- Unit: `tests/unit/state/proposal.test.js` (proposal, stale, undo/redo, diff, room),
+  `tests/unit/ui/naming.test.js`, `tests/unit/viewer/doorMotion.test.js` (incl. handles moving with
+  their door), `duplicateOps` in `opsFromForm.test.js`.
+- E2E: `tests/e2e/workspace.spec.js`: chat proposal previewed in 3D, Apply/Cancel from the 3D badge,
+  stale after a manual edit, undo, inspector, structure strip, panels, dimensions, duplicate, doors
+  (with handles), mirror, room, Save/Render dialogs. The team's specs (start screen, chat, agent,
+  voice, look and feel) run unchanged except where they referred to the removed "Show interior"
+  checkbox (now the Interior toolbar button) and the UI body font (now Inter).
