@@ -49,4 +49,20 @@ test.describe('Phase 3: 3D viewer', () => {
     expect(result.ok).toBe(true);
     await expect.poll(() => page.evaluate(() => window.__banai.viewer.meshOf('shf_l1').position.y)).toBeGreaterThan(y0 + 0.5);
   });
+
+  test('picking works in the same tick as a scene rebuild (before any frame is rendered)', async ({ page }) => {
+    const selected = await page.evaluate(() => {
+      const { store, viewer } = window.__banai;
+      store.setDoorsVisible(false); // rebuilds the scene; its meshes have not been rendered yet
+      // Synthetic events have no real pointer to capture (OrbitControls would throw).
+      viewer.canvas.setPointerCapture = () => {};
+      viewer.canvas.releasePointerCapture = () => {};
+      const { x, y } = viewer.screenPointOf('shf_r1');
+      const fire = (type) => viewer.canvas.dispatchEvent(new PointerEvent(type, { clientX: x, clientY: y, bubbles: true, buttons: type === 'pointerdown' ? 1 : 0 }));
+      fire('pointerdown');
+      fire('pointerup');
+      return store.getState().selection?.id ?? null;
+    });
+    expect(selected).toBe('shf_r1');
+  });
 });
