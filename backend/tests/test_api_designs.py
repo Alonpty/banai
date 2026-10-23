@@ -76,6 +76,28 @@ def test_save_bumps_the_revision_and_a_stale_save_is_409(store):
     assert client.get(url, headers=auth).json()["data"]["design"]["dimensions"]["height"] == 2300
 
 
+def test_save_as_copy_gets_its_own_link_and_leaves_the_original_alone(store):
+    """"Save as copy" posts the current design to the create route: a new id and token, revision 1,
+    while the original row keeps its design and revision and still opens with the old token only."""
+    original = save().json()["data"]
+    url, auth = f"/api/designs/{original['designId']}", bearer(original["accessToken"])
+    edited = {**basic_wardrobe(), "dimensions": {**basic_wardrobe()["dimensions"], "height": 2300}}
+    assert client.put(url, json={"design": edited}, headers={**auth, "If-Match": "1"}).status_code == 200
+
+    copied_design = {**basic_wardrobe(), "dimensions": {**basic_wardrobe()["dimensions"], "height": 2100}}
+    copied = save(copied_design).json()["data"]
+    assert copied["designId"] != original["designId"]
+    assert copied["accessToken"] != original["accessToken"] and copied["revision"] == 1
+
+    reopened = client.get(url, headers=auth).json()["data"]
+    assert reopened["design"] == edited and reopened["revision"] == 2  # the old link still opens the original
+    copy_url, copy_auth = f"/api/designs/{copied['designId']}", bearer(copied["accessToken"])
+    assert client.get(copy_url, headers=copy_auth).json()["data"]["design"] == copied_design
+    # Neither token opens the other design.
+    assert client.get(url, headers=copy_auth).status_code == 404
+    assert client.get(copy_url, headers=auth).status_code == 404
+
+
 def test_save_needs_the_token_and_a_revision(store):
     data = save().json()["data"]
     url = f"/api/designs/{data['designId']}"

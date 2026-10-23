@@ -38,6 +38,19 @@ function bindSkipLink() {
   });
 }
 
+// The display unit is a per-browser convenience, never part of the design or a save.
+const UNIT_STORAGE_KEY = 'banai.displayUnit';
+function bindUnitSwitch(store) {
+  const group = document.getElementById('unit-switch');
+  const buttons = [...group.querySelectorAll('[data-unit]')];
+  buttons.forEach((button) => button.addEventListener('click', () => store.setUnit(button.dataset.unit)));
+  store.subscribe(({ ui }) => {
+    buttons.forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.unit === ui.unit)));
+    try { localStorage.setItem(UNIT_STORAGE_KEY, ui.unit); } catch { /* storage may be unavailable */ }
+  });
+  try { store.setUnit(localStorage.getItem(UNIT_STORAGE_KEY)); } catch { /* keep the default */ }
+}
+
 function bindInteriorToggle(store) {
   const toggle = document.getElementById('toggle-interior');
   toggle.addEventListener('change', () => store.setDoorsVisible(!toggle.checked));
@@ -61,24 +74,35 @@ async function loadInitial(language) {
   return { initial: await getDefaultDesign(), session: null };
 }
 
+/**
+ * `save()` writes the current design over its link, or creates one on the first save. `saveCopy()`
+ * always creates a new design (new id and token) and moves this page onto it, so later saves go to
+ * the copy; the original row and its link are never touched. Both resolve to the page's link.
+ */
 function createSaver(store, language, initialSession) {
   let session = initialSession;
-  return async () => {
-    const { design } = store.getState();
-    if (session) {
-      const { revision } = await updateSavedDesign({ ...session, design, language: language.get() });
-      session = { ...session, revision };
-    } else {
-      const created = await createSavedDesign({ design, language: language.get() });
-      session = { designId: created.designId, token: created.accessToken, revision: created.revision };
-    }
+  const create = async (design) => {
+    const created = await createSavedDesign({ design, language: language.get() });
+    return { designId: created.designId, token: created.accessToken, revision: created.revision };
+  };
+  const moveTo = (next) => {
+    session = next;
     window.history.replaceState(null, '', shareHash(session));
     return window.location.href;
   };
+  return {
+    save: async () => {
+      const { design } = store.getState();
+      if (!session) return moveTo(await create(design));
+      const { revision } = await updateSavedDesign({ ...session, design, language: language.get() });
+      return moveTo({ ...session, revision });
+    },
+    saveCopy: async () => moveTo(await create(store.getState().design)),
+  };
 }
 
-function bindDialogs({ storage, onSave, link }) {
-  const save = createSaveDialog({ available: storage, onSave, link });
+function bindDialogs({ storage, saver, link }) {
+  const save = createSaveDialog({ available: storage, onSave: saver.save, onSaveCopy: saver.saveCopy, link });
   const render = createRenderDialog();
   document.getElementById('open-save').addEventListener('click', save.open);
   document.getElementById('open-render').addEventListener('click', render.open);
@@ -105,6 +129,7 @@ async function boot() {
   const store = createStore({ design: initial.design, revision: initial.revision, catalog });
   const viewer = createViewer(document.getElementById('viewer'), store);
   bindInteriorToggle(store);
+  bindUnitSwitch(store);
   bindSkipLink();
   const exporter = createExportDialog({
     getDesign: () => store.getState().design,
@@ -114,7 +139,7 @@ async function boot() {
   mountPanel(document.getElementById('properties-content'), store, { onExport: exporter.open });
   bindDialogs({
     storage: health?.data.storage === true,
-    onSave: createSaver(store, language, session),
+    saver: createSaver(store, language, session),
     link: session ? window.location.href : '',
   });
 
