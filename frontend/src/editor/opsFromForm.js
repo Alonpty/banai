@@ -1,23 +1,31 @@
 // Pure mapping from editor form input to domain ops. No DOM here, so every rule is
 // unit-tested. The domain engine remains the single authority on validity.
 import { interiorHeight } from '../domain/geometry.js';
+import { DEFAULT_DISPLAY_UNIT, DISPLAY_UNITS, formatLength, toMm } from '../viewer/units.js';
 
-const MAX_ABS_CM = 100_000;
-const CM_PATTERN = /^-?\d+([.,]\d+)?$/;
+const MAX_ABS_MM = 1_000_000;
+const NUMBER_PATTERN = /^-?\d+([.,]\d+)?$/;
 
 // ASSUMPTION: prototype defaults for newly added items (not business rules).
 export const NEW_ITEM = Object.freeze({ shelfThickness: 18, drawerHeight: 200, railBelowTop: 100 });
 
-/** Parse a centimetre input (`.` or `,` decimal) to integer millimetres. */
-export function parseCm(text) {
+/**
+ * Parse a length typed in a display unit (`.` or `,` decimal) to integer millimetres (nearest).
+ * The error messages are fixed text that never echoes the input.
+ */
+export function parseLength(text, unit = DEFAULT_DISPLAY_UNIT) {
+  const { name, example } = DISPLAY_UNITS[unit];
   const trimmed = String(text ?? '').trim();
-  if (!CM_PATTERN.test(trimmed)) return { ok: false, message: 'Enter a number in cm, e.g. 64.5' };
-  const cm = Number(trimmed.replace(',', '.'));
-  if (!Number.isFinite(cm) || Math.abs(cm) > MAX_ABS_CM) return { ok: false, message: 'That value is too large' };
-  return { ok: true, mm: Math.round(cm * 10) };
+  if (!NUMBER_PATTERN.test(trimmed)) return { ok: false, message: `Enter a number in ${name}, e.g. ${example}` };
+  const mm = toMm(Number(trimmed.replace(',', '.')), unit);
+  if (!Number.isFinite(mm) || Math.abs(mm) > MAX_ABS_MM) return { ok: false, message: 'That value is too large' };
+  return { ok: true, mm };
 }
 
-export const toCmText = (mm) => (mm / 10).toFixed(1);
+/** Parse a centimetre input to integer millimetres. */
+export const parseCm = (text) => parseLength(text, 'cm');
+
+export const toCmText = (mm) => formatLength(mm, 'cm');
 
 export const dimensionOps = (field, mm) => [{ op: 'update_dimensions', [field]: mm }];
 

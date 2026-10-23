@@ -14,6 +14,41 @@ async function commit(locator, value) {
 test.describe('Phase 4: manual editing', () => {
   test.beforeEach(async ({ page }) => openDesigner(page));
 
+  test('display units: typing a width in inches stores integer millimetres; labels and fields follow the unit', async ({ page }) => {
+    const unitButton = (unit) => page.getByTestId('unit-switch').getByRole('button', { name: unit, exact: true });
+    await expect(unitButton('cm')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByTestId('dim-width')).toHaveValue('200.0');
+
+    await unitButton('in').click();
+    await expect(unitButton('in')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByTestId('dim-width')).toHaveValue('78.74');
+    await expect(page.getByText('W 78.74 in', { exact: true })).toBeVisible();
+
+    await commit(page.getByTestId('dim-width'), '94.49');
+    const { design, revision } = await state(page);
+    expect(design.dimensions.width).toBe(2400); // integer mm, never inches
+    expect(Number.isInteger(design.dimensions.width)).toBe(true);
+    expect(revision).toBe(2);
+    await expect(page.getByText('W 94.49 in', { exact: true })).toBeVisible();
+
+    await commit(page.getByTestId('dim-width'), 'wide');
+    await expect(page.getByText('Enter a number in inches, e.g. 25.4')).toBeVisible();
+    expect((await state(page)).design.dimensions.width).toBe(2400);
+
+    await unitButton('mm').click();
+    await expect(page.getByTestId('dim-width')).toHaveValue('2400');
+    await expect(page.getByText('W 2400 mm', { exact: true })).toBeVisible();
+    await page.getByLabel('Show interior').check();
+    await clickComponent(page, 'shf_l2');
+    await expect(page.locator('.dim-label--selected')).toHaveText('Shelf · 800 mm from base · 18 mm thick');
+    await expect(page.getByTestId('shelf-y')).toHaveValue('800');
+
+    // The choice is remembered per browser (a convenience, not part of the design).
+    await page.reload();
+    await page.getByTestId('entry-basic').click();
+    await expect(unitButton('mm')).toHaveAttribute('aria-pressed', 'true');
+  });
+
   test('selecting a shelf in 3D shows its properties; editing its height moves the mesh', async ({ page }) => {
     await page.getByLabel('Show interior').check();
     await clickComponent(page, 'shf_l2');

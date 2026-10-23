@@ -16,7 +16,11 @@
           <input type="checkbox" id="toggle-interior" />
           <span>Show interior</span>
         </label>
-        <span class="topbar__units">cm</span>
+        <div class="segmented" id="unit-switch" role="group" aria-label="Display units" data-testid="unit-switch">
+          <button type="button" class="segmented__option" data-unit="cm" aria-pressed="true">cm</button>
+          <button type="button" class="segmented__option" data-unit="mm" aria-pressed="false">mm</button>
+          <button type="button" class="segmented__option" data-unit="in" aria-pressed="false">in</button>
+        </div>
         <button type="button" class="btn btn--tonal" id="open-render" data-testid="open-render">Render</button>
         <button type="button" class="btn btn--primary" id="open-save" data-testid="open-save">Save</button>
         <a class="btn btn--ghost" href="/accessibility.html" lang="he" data-testid="a11y-link">נגישות</a>

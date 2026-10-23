@@ -13,6 +13,7 @@ main.js (boot) ── api/client.js ──► GET /api/catalog, /api/designs/def
 ```
 
 ## State rules
+- **The display unit is view state.** `ui.unit` (cm, mm or in) is set by the top-bar switch through `store.setUnit`, remembered per browser in `localStorage`, and never enters the design, the revision, a save or the agent's context. Every length field (`editor/fields.js` `lengthField`) shows the unit and commits **integer millimetres**: typing in inches is rounded to the nearest mm (`parseLength` in `opsFromForm.js`).
 - The design changes **only** via `store.dispatch(ops)`. A `DomainError` returns `{ ok: false, error }`, and the state and subscribers are left untouched.
 - Snapshots are deep-frozen and compared by reference. The viewer rebuilds geometry only when `design` or `ui.doorsVisible` changes. A selection change only updates the highlight and labels.
 - When a component is removed, the selection is re-resolved and cleared if needed.
@@ -27,7 +28,8 @@ main.js (boot) ── api/client.js ──► GET /api/catalog, /api/designs/def
 | `viewer.js` | Renderer (`preserveDrawingBuffer` for the Phase 8 capture), camera, OrbitControls, store subscription, and `screenPointOf` / `meshOf` helpers. |
 | `picking.js` | Click → raycast → `store.select`. A drag (>5 px) is an orbit, not a click. A hit on the back panel selects the compartment under the cursor. |
 | `highlight.js` | Always-on-top accent outline. A compartment outlines its interior volume. |
-| `dimensions.js`, `format.js` | CSS2D labels for W/H/D and the selected component. Text is written with `textContent` only. Units are shown in cm with 1 decimal. |
+| `dimensions.js`, `format.js` | CSS2D labels for W/H/D and the selected component. Text is written with `textContent` only. Lengths are shown in the display unit (`ui.unit`). |
+| `units.js` (display part) | `DISPLAY_UNITS`: cm (1 decimal), mm (0) and inches (2), chosen so that format → parse returns the same integer mm. `formatLength` and `toMm` are pure; the default unit (cm) is a configurable prototype value. |
 
 Coordinates: x = 0 at the outer left face, y = 0 at the floor, front face at z = 0, back at z = −depth. Doors sit in front (z > 0). Sliding doors use two depth tracks.
 

@@ -120,3 +120,29 @@ describe('replaceDesign (applied AI proposal)', () => {
     expect(store.getState()).toBe(before);
   });
 });
+
+describe('store: display unit (view state)', () => {
+  it('starts in cm and switches between cm, mm and inches', () => {
+    const store = makeStore();
+    expect(store.getState().ui.unit).toBe('cm');
+    store.setUnit('in');
+    expect(store.getState().ui.unit).toBe('in');
+    store.setUnit('mm');
+    expect(store.getState().ui.unit).toBe('mm');
+  });
+
+  it('never changes the design or the revision, and ignores unknown units', () => {
+    const store = makeStore();
+    const listener = vi.fn();
+    store.subscribe(listener);
+    const { design, revision } = store.getState();
+    store.setUnit('in');
+    expect(store.getState().design).toBe(design);
+    expect(store.getState().revision).toBe(revision);
+    store.setUnit('furlong');
+    store.setUnit(null);
+    store.setUnit('in'); // unchanged: no notification
+    expect(store.getState().ui.unit).toBe('in');
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+});

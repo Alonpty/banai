@@ -38,6 +38,19 @@ function bindSkipLink() {
   });
 }
 
+// The display unit is a per-browser convenience, never part of the design or a save.
+const UNIT_STORAGE_KEY = 'banai.displayUnit';
+function bindUnitSwitch(store) {
+  const group = document.getElementById('unit-switch');
+  const buttons = [...group.querySelectorAll('[data-unit]')];
+  buttons.forEach((button) => button.addEventListener('click', () => store.setUnit(button.dataset.unit)));
+  store.subscribe(({ ui }) => {
+    buttons.forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.unit === ui.unit)));
+    try { localStorage.setItem(UNIT_STORAGE_KEY, ui.unit); } catch { /* storage may be unavailable */ }
+  });
+  try { store.setUnit(localStorage.getItem(UNIT_STORAGE_KEY)); } catch { /* keep the default */ }
+}
+
 function bindInteriorToggle(store) {
   const toggle = document.getElementById('toggle-interior');
   toggle.addEventListener('change', () => store.setDoorsVisible(!toggle.checked));
@@ -105,6 +118,7 @@ async function boot() {
   const store = createStore({ design: initial.design, revision: initial.revision, catalog });
   const viewer = createViewer(document.getElementById('viewer'), store);
   bindInteriorToggle(store);
+  bindUnitSwitch(store);
   bindSkipLink();
   const exporter = createExportDialog({
     getDesign: () => store.getState().design,
