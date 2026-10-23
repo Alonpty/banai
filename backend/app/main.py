@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import agent, export, health, reference, voice
+from app.api import agent, designs, export, health, reference, voice
 from app.config import get_settings
 
 
@@ -23,7 +23,8 @@ def create_app() -> FastAPI:
         expose_headers=["Content-Disposition"],  # the PDF export filename
     )
     app.include_router(health.router)
-    app.include_router(reference.router)
+    app.include_router(reference.router)  # before designs: /designs/default must win over /designs/{id}
+    app.include_router(designs.router)
     app.include_router(agent.router)
     app.include_router(voice.router)
     app.include_router(export.router)
