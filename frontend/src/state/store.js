@@ -7,6 +7,7 @@ import { parseCatalog } from '../domain/catalog.js';
 import { DomainError } from '../domain/errors.js';
 import { locate } from '../domain/lookup.js';
 import { deepFreeze } from '../domain/util.js';
+import { pickMeasure, pruneMeasure } from './measure.js';
 
 const KIND_BY_LOCATION = Object.freeze({
   compartment: 'compartment',
@@ -36,13 +37,26 @@ export function createStore({ design, revision = 1, catalog }) {
     throw new DomainError('SCHEMA_INVALID', 'revision', 'invalid revision');
   }
   let state = deepFreeze({
-    design: validDesign, revision, catalog: validCatalog, selection: null, ui: { doorsVisible: true },
+    design: validDesign,
+    revision,
+    catalog: validCatalog,
+    selection: null,
+    ui: { doorsVisible: true, measure: { on: false, ids: [] } },
   });
   const listeners = new Set();
 
   const commit = (patch) => {
     state = deepFreeze({ ...state, ...patch });
     listeners.forEach((listener) => listener(state));
+  };
+  // After the design changed: keep the selection and measure picks that still exist.
+  const followDesign = (next) => {
+    const { measure } = state.ui;
+    const ids = pruneMeasure(next, measure.ids);
+    return {
+      selection: state.selection && resolveSelection(next, state.selection.id),
+      ui: ids === measure.ids ? state.ui : { ...state.ui, measure: { ...measure, ids } },
+    };
   };
 
   return {
@@ -62,8 +76,7 @@ export function createStore({ design, revision = 1, catalog }) {
         if (error instanceof DomainError) return { ok: false, error };
         throw error;
       }
-      const selection = state.selection && resolveSelection(next, state.selection.id);
-      commit({ design: next, revision: state.revision + 1, selection });
+      commit({ design: next, revision: state.revision + 1, ...followDesign(next) });
       return { ok: true };
     },
 
@@ -82,12 +95,29 @@ export function createStore({ design, revision = 1, catalog }) {
       if (!Number.isInteger(revision) || revision <= state.revision) {
         throw new DomainError('SCHEMA_INVALID', 'revision', 'invalid revision');
       }
-      const selection = state.selection && resolveSelection(next, state.selection.id);
-      commit({ design: next, revision, selection });
+      commit({ design: next, revision, ...followDesign(next) });
     },
 
     setDoorsVisible(doorsVisible) {
       commit({ ui: { ...state.ui, doorsVisible } });
+    },
+
+    /** Turn the measuring tool on or off. Turning it off forgets the picks. View state only. */
+    setMeasureMode(on) {
+      if (on === state.ui.measure.on) return;
+      commit({ ui: { ...state.ui, measure: { on, ids: [] } } });
+    },
+
+    /**
+     * Pick a component for the measuring tool (null clears). Two picks make a measurement; a third
+     * starts a new one. Unknown ids are ignored. The design, revision and selection never change.
+     */
+    measurePick(id) {
+      const { measure } = state.ui;
+      if (!measure.on) return;
+      if (id !== null && resolveSelection(state.design, id) === null) return;
+      const ids = pickMeasure(measure.ids, id);
+      if (ids !== measure.ids) commit({ ui: { ...state.ui, measure: { ...measure, ids } } });
     },
   };
 }

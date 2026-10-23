@@ -44,6 +44,12 @@ function bindInteriorToggle(store) {
   store.subscribe((state) => { toggle.checked = !state.ui.doorsVisible; });
 }
 
+function bindMeasureToggle(store) {
+  const toggle = document.getElementById('toggle-measure');
+  toggle.addEventListener('change', () => store.setMeasureMode(toggle.checked));
+  store.subscribe((state) => { toggle.checked = state.ui.measure.on; });
+}
+
 /**
  * The design to open: the saved one when the page was opened from its private link, else the basic
  * wardrobe. `session` ({ designId, token, revision }) is what the next save writes over.
@@ -105,6 +111,7 @@ async function boot() {
   const store = createStore({ design: initial.design, revision: initial.revision, catalog });
   const viewer = createViewer(document.getElementById('viewer'), store);
   bindInteriorToggle(store);
+  bindMeasureToggle(store);
   bindSkipLink();
   const exporter = createExportDialog({
     getDesign: () => store.getState().design,
