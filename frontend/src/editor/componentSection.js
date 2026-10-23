@@ -25,7 +25,7 @@ function overrideControls({ catalog, design, item, inherited, run, label }) {
   ];
 }
 
-function fieldsFor(kind, { design, catalog, selection, run, runAction }) {
+function fieldsFor(kind, { design, catalog, selection, run, runAction, openDoors, toggleDoor }) {
   const { id } = selection;
   const move = (op, field) => (mm) => run([{ op, id, [field]: mm }]);
   if (kind === 'shelf') {
@@ -65,7 +65,10 @@ function fieldsFor(kind, { design, catalog, selection, run, runAction }) {
   }
   if (kind === 'door') {
     const door = design.doors.items.find((d) => d.id === id);
+    const isOpen = openDoors.includes(id);
     return [
+      // Shows the door open or closed in the 3D view only (the design does not change).
+      el('div', { className: 'button-row' }, [button(isOpen ? 'Close door' : 'Open door', () => toggleDoor(id), { testId: 'toggle-door' })]),
       ...(design.doors.type === 'hinged' ? [segmented({
         label: 'Hinge side', value: door.hingeSide, testId: 'hinge-side',
         options: [{ value: 'left', label: 'Left' }, { value: 'right', label: 'Right' }],
@@ -77,12 +80,12 @@ function fieldsFor(kind, { design, catalog, selection, run, runAction }) {
   return [el('p', { className: 'panel__note', text: 'Edit the overall dimensions and materials in the Wardrobe section.' })];
 }
 
-export function componentSection({ design, catalog, selection, run, select }) {
+export function componentSection({ design, catalog, selection, run, select, openDoors = [], toggleDoor = () => {} }) {
   const container = section(`Selected · ${TITLES[selection.kind]}`, []);
   container.dataset.testid = 'selected-section';
   // Inputs report their own errors inline; buttons/selects report under the section.
   const runAction = (ops) => actionResult(container, run(ops));
-  container.append(...fieldsFor(selection.kind, { design, catalog, selection, run, runAction }));
+  container.append(...fieldsFor(selection.kind, { design, catalog, selection, run, runAction, openDoors, toggleDoor }));
   const actions = [button('Deselect', () => select(null), { variant: 'ghost' })];
   if (selection.kind !== 'carcass') {
     actions.unshift(button(`Delete ${TITLES[selection.kind].toLowerCase()}`, () => runAction(removeOps(selection.id)), { variant: 'danger', testId: 'delete-selected' }));

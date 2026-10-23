@@ -7,6 +7,7 @@ import { parseCatalog } from '../domain/catalog.js';
 import { DomainError } from '../domain/errors.js';
 import { locate } from '../domain/lookup.js';
 import { deepFreeze } from '../domain/util.js';
+import { pruneOpenDoors, toggleOpenDoor } from './openDoors.js';
 
 const KIND_BY_LOCATION = Object.freeze({
   compartment: 'compartment',
@@ -36,7 +37,7 @@ export function createStore({ design, revision = 1, catalog }) {
     throw new DomainError('SCHEMA_INVALID', 'revision', 'invalid revision');
   }
   let state = deepFreeze({
-    design: validDesign, revision, catalog: validCatalog, selection: null, ui: { doorsVisible: true },
+    design: validDesign, revision, catalog: validCatalog, selection: null, ui: { doorsVisible: true, openDoors: [] },
   });
   const listeners = new Set();
 
@@ -44,6 +45,11 @@ export function createStore({ design, revision = 1, catalog }) {
     state = deepFreeze({ ...state, ...patch });
     listeners.forEach((listener) => listener(state));
   };
+  // After the design changed: keep the selection if it still exists, forget open doors that are gone.
+  const followDesign = (next) => ({
+    selection: state.selection && resolveSelection(next, state.selection.id),
+    ui: { ...state.ui, openDoors: pruneOpenDoors(next, state.ui.openDoors) },
+  });
 
   return {
     getState: () => state,
@@ -62,8 +68,7 @@ export function createStore({ design, revision = 1, catalog }) {
         if (error instanceof DomainError) return { ok: false, error };
         throw error;
       }
-      const selection = state.selection && resolveSelection(next, state.selection.id);
-      commit({ design: next, revision: state.revision + 1, selection });
+      commit({ design: next, revision: state.revision + 1, ...followDesign(next) });
       return { ok: true };
     },
 
@@ -82,12 +87,17 @@ export function createStore({ design, revision = 1, catalog }) {
       if (!Number.isInteger(revision) || revision <= state.revision) {
         throw new DomainError('SCHEMA_INVALID', 'revision', 'invalid revision');
       }
-      const selection = state.selection && resolveSelection(next, state.selection.id);
-      commit({ design: next, revision, selection });
+      commit({ design: next, revision, ...followDesign(next) });
     },
 
     setDoorsVisible(doorsVisible) {
       commit({ ui: { ...state.ui, doorsVisible } });
+    },
+
+    /** Show a door open or closed in the 3D view. View state only: the design is untouched. */
+    toggleDoor(doorId) {
+      const openDoors = toggleOpenDoor(state.design, state.ui.openDoors, doorId);
+      if (openDoors !== state.ui.openDoors) commit({ ui: { ...state.ui, openDoors } });
     },
   };
 }

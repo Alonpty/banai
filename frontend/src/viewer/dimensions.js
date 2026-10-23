@@ -55,7 +55,14 @@ export function createDimensions(scene) {
       const selected = label(describeSelection(design, selection), 'dim-label dim-label--selected');
       selected.position.copy(anchor);
       selected.center.set(0.5, 1.6); // sit above the component instead of covering it
+      selected.userData.source = target; // followed while the mesh animates (an opening door)
       layer.add(selected);
+    },
+    /** Keep the selected label on a mesh that moved since the last update (door animation). */
+    follow() {
+      layer.children.forEach((child) => {
+        if (child.userData.source) child.position.copy(child.userData.source.position);
+      });
     },
     dispose() {
       clear();
