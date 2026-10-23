@@ -15,12 +15,14 @@ export function mountPanel(root, store, { onExport } = {}) {
     }
   };
   const select = (id) => store.select(id);
-  let rendered = { design: null, selection: undefined };
+  const toggleDoor = (id) => store.toggleDoor(id);
+  let rendered = { design: null, selection: undefined, openDoors: undefined };
 
   const render = (state) => {
-    if (state.design === rendered.design && state.selection === rendered.selection) return;
-    rendered = { design: state.design, selection: state.selection };
-    const context = { design: state.design, catalog: state.catalog, selection: state.selection, run, select, onExport };
+    const { openDoors } = state.ui;
+    if (state.design === rendered.design && state.selection === rendered.selection && openDoors === rendered.openDoors) return;
+    rendered = { design: state.design, selection: state.selection, openDoors };
+    const context = { design: state.design, catalog: state.catalog, selection: state.selection, run, select, onExport, openDoors, toggleDoor };
     // Re-rendering replaces every control: put keyboard focus back on the same one (WCAG 2.4.3).
     const focused = root.contains(document.activeElement) ? document.activeElement.dataset.testid : undefined;
     root.replaceChildren(

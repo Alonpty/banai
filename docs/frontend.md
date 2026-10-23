@@ -13,6 +13,7 @@ main.js (boot) ── api/client.js ──► GET /api/catalog, /api/designs/def
 ```
 
 ## State rules
+- **Open doors are view state.** `ui.openDoors` lists the doors shown open in the 3D view. It changes only through `store.toggleDoor(id)` (a click on a door, or the Open/Close button of the selected door) and never enters the design, the revision, a save or the agent's context. `state/openDoors.js` holds the pure rules: a hinged door simply toggles; a sliding panel slides one slot along its track (the last panel to the left), and opening one pushes back an open panel that would land in the same slot of the same track. Door ids that a design change removed are pruned.
 - The design changes **only** via `store.dispatch(ops)`. A `DomainError` returns `{ ok: false, error }`, and the state and subscribers are left untouched.
 - Snapshots are deep-frozen and compared by reference. The viewer rebuilds geometry only when `design` or `ui.doorsVisible` changes. A selection change only updates the highlight and labels.
 - When a component is removed, the selection is re-resolved and cleared if needed.
@@ -26,7 +27,8 @@ main.js (boot) ── api/client.js ──► GET /api/catalog, /api/designs/def
 | `materials.js` | Appearance → `MeshStandardMaterial` (catalog hex, or custom hex; finish → roughness), cached per distinct appearance. |
 | `viewer.js` | Renderer (`preserveDrawingBuffer` for the Phase 8 capture), camera, OrbitControls, store subscription, and `screenPointOf` / `meshOf` helpers. |
 | `picking.js` | Click → raycast → `store.select`. A drag (>5 px) is an orbit, not a click. A hit on the back panel selects the compartment under the cursor. |
-| `highlight.js` | Always-on-top accent outline. A compartment outlines its interior volume. |
+| `highlight.js` | Always-on-top accent outline. A compartment outlines its interior volume. `follow()` keeps it on a moving door. |
+| `doorAnimation.js` | Door open/close animation. Each door part carries `userData.motion` from the builder (hinge axis and angle, or slide distance); the animator eases a per-door progress towards `ui.openDoors` every frame and poses the parts. Respects `prefers-reduced-motion`. |
 | `dimensions.js`, `format.js` | CSS2D labels for W/H/D and the selected component. Text is written with `textContent` only. Units are shown in cm with 1 decimal. |
 
 Coordinates: x = 0 at the outer left face, y = 0 at the floor, front face at z = 0, back at z = −depth. Doors sit in front (z > 0). Sliding doors use two depth tracks.

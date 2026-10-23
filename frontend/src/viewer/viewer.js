@@ -1,12 +1,13 @@
 // Interactive Three.js viewer. Renders ONLY from store state: it rebuilds the wardrobe
 // whenever the committed design (or door visibility) changes, and never edits state
-// except through store.select().
+// except through store.select() and store.toggleDoor() (view state: which doors are shown open).
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js';
 import { buildWardrobe, disposeWardrobe } from './buildWardrobe.js';
 import { frameOf } from './builders/frame.js';
 import { createDimensions } from './dimensions.js';
+import { createDoorAnimator } from './doorAnimation.js';
 import { createHighlighter } from './highlight.js';
 import { createMaterials } from './materials.js';
 import { attachPicking } from './picking.js';
@@ -61,6 +62,7 @@ export function createViewer(container, store) {
   const materials = createMaterials(store.getState().catalog);
   const highlighter = createHighlighter(scene);
   const dimensions = createDimensions(scene);
+  const doors = createDoorAnimator({ reducedMotion: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true });
   let group = null;
   let rendered = { design: null, doorsVisible: null, selection: undefined, dimsKey: null };
 
@@ -111,14 +113,26 @@ export function createViewer(container, store) {
     dom: renderer.domElement,
     camera,
     getTargets: () => (group ? group.children : []),
-    onPick: (hit) => store.select(componentAt(hit, store.getState().design)),
+    onPick: (hit) => {
+      store.select(componentAt(hit, store.getState().design));
+      // A click on a door also swings or slides it open (and closed again). View state only.
+      if (hit?.object.userData.kind === 'door') store.toggleDoor(hit.object.userData.componentId);
+    },
     onHover: (hit) => { renderer.domElement.style.cursor = hit?.object.userData.componentId ? 'pointer' : ''; },
   });
   const unsubscribe = store.subscribe(sync);
   sync(store.getState());
 
-  renderer.setAnimationLoop(() => {
+  let lastFrame = performance.now();
+  renderer.setAnimationLoop((now) => {
+    const dt = Math.min(now - lastFrame, 100); // a long pause (hidden tab) must not teleport doors
+    lastFrame = now;
     controls.update();
+    if (doors.update(group, store.getState().ui.openDoors, dt)) {
+      // While a door moves, its outline and label travel with it.
+      highlighter.follow();
+      dimensions.follow();
+    }
     renderer.render(scene, camera);
     labels.render(scene, camera);
   });
@@ -128,6 +142,8 @@ export function createViewer(container, store) {
     controls,
     canvas: renderer.domElement,
     meshOf: (componentId) => group?.children.find((mesh) => mesh.userData.componentId === componentId) ?? null,
+    /** 0 (closed) to 1 (open) for a door's animation, for tests and tooling. */
+    doorProgressOf: (doorId) => doors.progressOf(doorId),
     /** Client (page) coordinates of a component's centre, for tests and tooling. */
     screenPointOf(componentId) {
       const mesh = this.meshOf(componentId);

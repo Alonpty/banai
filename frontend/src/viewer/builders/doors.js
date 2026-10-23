@@ -4,8 +4,12 @@
 // - Sliding panels overlap their neighbours and alternate between two tracks (back, front),
 //   between a top and a bottom rail, each with a vertical pull handle.
 // Handles and rails are visual hardware only: they are not selectable, and never part of the design.
+// Every door part (panel, outline, handle) carries userData.motion, which tells the viewer how the
+// door opens: a hinged door swings about its hinge edge, a sliding panel slides one slot along its
+// track. Open/closed is view state (see state/openDoors.js); the builder always builds doors closed.
 import * as THREE from 'three';
-import { VISUAL } from '../units.js';
+import { slideTargetOf } from '../../state/openDoors.js';
+import { VISUAL, toM } from '../units.js';
 import { box } from './frame.js';
 
 const noRaycast = () => {};
@@ -23,6 +27,12 @@ function outline(panel, materials) {
   lines.userData = { kind: 'hardware', part: 'edge' };
   lines.raycast = noRaycast;
   return lines;
+}
+
+/** Tag the parts of one door with how it opens (scene units: metres and radians). */
+function withMotion(parts, motion) {
+  parts.forEach((part) => { part.userData.motion = motion; });
+  return parts;
 }
 
 /** A vertical handle with its centre x, on a panel whose front face is at frontZ. */
@@ -50,8 +60,17 @@ function buildHinged(design, frame, materials, { t, gap, y, height, materialOf }
       userData: { componentId: door.id, kind: 'door', hingeSide: door.hingeSide },
     });
     // The handle sits on the free edge, opposite the hinge.
-    const freeEdgeX = door.hingeSide === 'right' ? x0 + gap + VISUAL.handleInset : x1 - gap - VISUAL.handleInset;
-    return [panel, outline(panel, materials), handle(freeEdgeX, t, y, height, materials)];
+    const hingedRight = door.hingeSide === 'right';
+    const freeEdgeX = hingedRight ? x0 + gap + VISUAL.handleInset : x1 - gap - VISUAL.handleInset;
+    // The door swings outwards (towards +z) about a vertical axis on its hinge edge, at the carcass front.
+    const motion = {
+      kind: 'hinge',
+      doorId: door.id,
+      axisX: toM(hingedRight ? x1 - gap : x0 + gap),
+      axisZ: 0,
+      angle: THREE.MathUtils.degToRad(VISUAL.doorOpenAngleDeg) * (hingedRight ? 1 : -1),
+    };
+    return withMotion([panel, outline(panel, materials), handle(freeEdgeX, t, y, height, materials)], motion);
   });
 }
 
@@ -81,7 +100,10 @@ function buildSliding(design, frame, materials, { t, gap, y, height, materialOf 
     if (count === 1) handleX = x0 + panelWidth - inset;
     else if (isLast) handleX = x0 + (onFront ? 0 : overlap) + inset;
     else handleX = x0 + panelWidth - (onFront ? 0 : overlap) - inset;
-    return [panel, outline(panel, materials), handle(handleX, z + t / 2, y, height, materials)];
+    // The panel slides along its track into the neighbouring slot (null: a single panel cannot open).
+    const target = slideTargetOf(i, count);
+    const motion = target === null ? null : { kind: 'slide', doorId: door.id, dx: toM((target - i) * step) };
+    return withMotion([panel, outline(panel, materials), handle(handleX, z + t / 2, y, height, materials)], motion);
   });
 
   // Top and bottom rails span both tracks, like the aluminium frame of a sliding wardrobe.

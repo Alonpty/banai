@@ -50,6 +50,38 @@ test.describe('Phase 3: 3D viewer', () => {
     await expect.poll(() => page.evaluate(() => window.__banai.viewer.meshOf('shf_l1').position.y)).toBeGreaterThan(y0 + 0.5);
   });
 
+  test('clicking a hinged door swings it open, clicking again closes it', async ({ page }) => {
+    const rotationOf = (id) => page.evaluate((doorId) => window.__banai.viewer.meshOf(doorId).rotation.y, id);
+    expect(await rotationOf('dr_left')).toBe(0);
+    await clickComponent(page, 'dr_left');
+    expect(await selection(page)).toEqual({ id: 'dr_left', kind: 'door' });
+    expect(await page.evaluate(() => window.__banai.store.getState().ui.openDoors)).toEqual(['dr_left']);
+    await expect.poll(() => page.evaluate(() => window.__banai.viewer.doorProgressOf('dr_left'))).toBe(1);
+    // A left-hinged door swings outwards: negative rotation about y, centre moved towards the camera.
+    expect(await rotationOf('dr_left')).toBeLessThan(-1);
+    expect(await page.evaluate(() => window.__banai.viewer.meshOf('dr_left').position.z)).toBeGreaterThan(0.2);
+    // The other doors did not move, and the design did not change.
+    expect(await rotationOf('dr_middle')).toBe(0);
+    expect(await page.evaluate(() => window.__banai.store.getState().revision)).toBe(1);
+    await page.getByTestId('toggle-door').click(); // the panel's button closes it again (keyboard access)
+    await expect.poll(() => page.evaluate(() => window.__banai.viewer.doorProgressOf('dr_left'))).toBe(0);
+    expect(await rotationOf('dr_left')).toBe(0);
+  });
+
+  test('clicking a sliding panel slides it along its track', async ({ page }) => {
+    await page.getByTestId('door-type').getByRole('button', { name: 'Sliding' }).click();
+    const ids = await page.evaluate(() => window.__banai.store.getState().design.doors.items.map((d) => d.id));
+    expect(ids).toHaveLength(2);
+    await page.waitForFunction((id) => window.__banai.viewer.meshOf(id), ids[0]);
+    const x0 = await page.evaluate((id) => window.__banai.viewer.meshOf(id).position.x, ids[0]);
+    await clickComponent(page, ids[0]);
+    await expect.poll(() => page.evaluate((id) => window.__banai.viewer.doorProgressOf(id), ids[0])).toBe(1);
+    const mesh = await page.evaluate((id) => { const m = window.__banai.viewer.meshOf(id); return { x: m.position.x, ry: m.rotation.y }; }, ids[0]);
+    expect(mesh.x).toBeGreaterThan(x0 + 0.5); // slid about one panel width to the right
+    expect(mesh.ry).toBe(0);
+    await expect(page.getByTestId('toggle-door')).toHaveText('Close door');
+  });
+
   test('picking works in the same tick as a scene rebuild (before any frame is rendered)', async ({ page }) => {
     const selected = await page.evaluate(() => {
       const { store, viewer } = window.__banai;

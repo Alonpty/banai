@@ -12,9 +12,11 @@ export function createHighlighter(scene) {
   scene.add(layer);
   const material = new THREE.LineBasicMaterial({ color: ACCENT, depthTest: false, transparent: true });
 
-  const outline = (geometry, position) => {
+  const outline = (geometry, position, source = null) => {
     const lines = new THREE.LineSegments(new THREE.EdgesGeometry(geometry), material);
     lines.position.copy(position);
+    if (source) lines.rotation.copy(source.rotation);
+    lines.userData.source = source; // followed while the mesh animates (an opening door)
     lines.renderOrder = 10;
     layer.add(lines);
   };
@@ -39,7 +41,16 @@ export function createHighlighter(scene) {
       }
       group.children
         .filter((mesh) => mesh.userData.componentId === selection.id)
-        .forEach((mesh) => outline(mesh.geometry, mesh.position));
+        .forEach((mesh) => outline(mesh.geometry, mesh.position, mesh));
+    },
+    /** Keep outlines on meshes that moved since the last update (door animation). */
+    follow() {
+      layer.children.forEach((lines) => {
+        const { source } = lines.userData;
+        if (!source) return;
+        lines.position.copy(source.position);
+        lines.rotation.copy(source.rotation);
+      });
     },
     dispose() {
       clear();

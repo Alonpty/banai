@@ -120,3 +120,37 @@ describe('replaceDesign (applied AI proposal)', () => {
     expect(store.getState()).toBe(before);
   });
 });
+
+describe('store: open doors (view state)', () => {
+  it('starts with every door closed and toggles a door open and closed', () => {
+    const store = makeStore();
+    expect(store.getState().ui.openDoors).toEqual([]);
+    store.toggleDoor('dr_left');
+    expect(store.getState().ui.openDoors).toEqual(['dr_left']);
+    store.toggleDoor('dr_left');
+    expect(store.getState().ui.openDoors).toEqual([]);
+  });
+
+  it('never changes the design or the revision', () => {
+    const store = makeStore();
+    const { design, revision } = store.getState();
+    store.toggleDoor('dr_middle');
+    expect(store.getState().design).toBe(design);
+    expect(store.getState().revision).toBe(revision);
+  });
+
+  it('ignores non-door ids without notifying subscribers', () => {
+    const store = makeStore();
+    const listener = vi.fn();
+    store.subscribe(listener);
+    store.toggleDoor('shf_l1');
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('forgets open doors that a design change removed', () => {
+    const store = makeStore();
+    store.toggleDoor('dr_left');
+    store.dispatch([{ op: 'configure_doors', type: 'sliding', count: 2 }]);
+    expect(store.getState().ui.openDoors).toEqual([]);
+  });
+});
