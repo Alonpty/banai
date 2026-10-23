@@ -17,6 +17,7 @@ CLARIFY = "ask_clarification"
 ANSWER = "answer_design_question"
 DECLINE = "decline_off_topic"
 OFFER = "offer_style_profile"
+EXPLAIN = "explain_design"
 
 Text = lambda max_length: Annotated[str, Field(min_length=1, max_length=max_length, pattern=SAFE_TEXT_PATTERN)]  # noqa: E731
 
@@ -48,6 +49,14 @@ class AnswerArgs(BaseModel):
 class OfferArgs(BaseModel):
     model_config = ConfigDict(extra="ignore")
     reply: Text(300)
+
+
+class ExplainArgs(BaseModel):
+    """A description of the current design. Any `ops` the model adds are dropped (extra="ignore"):
+    this tool can never carry a change."""
+
+    model_config = ConfigDict(extra="ignore")
+    description: Text(1200)
 
 
 TOOLS: list[dict] = [
@@ -114,6 +123,22 @@ TOOLS: list[dict] = [
                 "type": "object",
                 "properties": {"reply": {"type": "string", "description": "One short sentence, in the response language."}},
                 "required": ["reply"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": EXPLAIN,
+            "description": "The customer asks what their wardrobe currently contains or how it is built "
+                           "(\"what do I have in my wardrobe?\", \"describe my design\"). Describe the CURRENT design "
+                           "in words. Do not propose, suggest or make any change.",
+            "parameters": {
+                "type": "object",
+                "properties": {"description": {"type": "string", "description": "A short description in the response language: "
+                               "overall size in cm, each compartment left to right with its shelves, drawers and rails, "
+                               "doors, and materials/colours. At most 6 short sentences. No suggestions."}},
+                "required": ["description"],
             },
         },
     },

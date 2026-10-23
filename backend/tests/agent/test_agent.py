@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 
 from app.agent.language import FALLBACK_REPLY, OFF_TOPIC_REPLY, detect, reply_language
 from app.agent.orchestrator import MAX_REPAIRS, fill_ids
-from app.agent.tools import ANSWER, CLARIFY, DECLINE, OFFER, PROPOSE
+from app.agent.tools import ANSWER, CLARIFY, DECLINE, EXPLAIN, OFFER, PROPOSE
 from app.api.agent import get_llm_client
 from app.config import get_settings, get_signing_key
 from app.domain.defaults import basic_wardrobe
@@ -50,7 +50,7 @@ def test_every_turn_must_use_a_tool_and_free_text_is_never_shown(make_client):
     request = fake.requests[0]
     assert request["model"]
     assert request["tool_choice"] == "required"
-    assert {tool["function"]["name"] for tool in request["tools"]} == {PROPOSE, CLARIFY, ANSWER, DECLINE, OFFER}
+    assert {tool["function"]["name"] for tool in request["tools"]} == {PROPOSE, CLARIFY, ANSWER, DECLINE, OFFER, EXPLAIN}
     assert request["messages"][0]["role"] == "system"
     assert "Scope (strict)" in request["messages"][0]["content"]
     assert '"cmp_left"' in request["messages"][0]["content"]  # the current design is in context
@@ -270,3 +270,25 @@ def test_done_offers_the_style_profile_and_changes_nothing(make_client):
     assert data["offerProfile"] is True
     assert data["proposal"] is None
     assert "offer_style_profile" in fake.requests[0]["messages"][0]["content"]
+
+
+def test_explain_design_describes_in_words_and_changes_nothing(make_client):
+    design = basic_wardrobe()
+    before = copy.deepcopy(design)
+    description = "הארון ברוחב 200 ס\"מ ובגובה 240 ס\"מ, עם שני תאים: בשמאלי מדף ובימני מוט תלייה."
+    fake = FakeClient(completion(calls=[tool_call(EXPLAIN, {"description": description})]))
+    data = make_client(fake).post("/api/chat", json=chat_body("מה יש לי בארון?", design=design)).json()["data"]
+    assert data["reply"] == description
+    assert data["proposal"] is None
+    assert data["offerProfile"] is False
+    assert design == before  # the server never touches the customer's design
+    assert len(fake.requests) == 1  # answered on the first call, no repair loop
+    assert "explain_design" in fake.requests[0]["messages"][0]["content"]
+
+
+def test_explain_design_cannot_smuggle_ops(make_client):
+    """Even if the model attaches ops to the explain tool, they are dropped: no proposal is ever built."""
+    fake = FakeClient(completion(calls=[tool_call(EXPLAIN, {"description": "Two compartments.", "ops": [ADD_SHELF]})]))
+    data = make_client(fake).post("/api/chat", json=chat_body("what do I have in my wardrobe?")).json()["data"]
+    assert data["reply"] == "Two compartments."
+    assert data["proposal"] is None
