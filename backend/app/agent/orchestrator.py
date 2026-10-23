@@ -17,7 +17,9 @@ from pydantic import ValidationError
 
 from app.agent.language import FALLBACK_REPLY, OFF_TOPIC_REPLY, Language, reply_language
 from app.agent.prompts import build_system_prompt
-from app.agent.tools import ANSWER, CLARIFY, DECLINE, OFFER, PROPOSE, TOOLS, AnswerArgs, ClarifyArgs, OfferArgs, ProposeArgs
+from app.agent.tools import (
+    ANSWER, CLARIFY, DECLINE, EXPLAIN, OFFER, PROPOSE, TOOLS, AnswerArgs, ClarifyArgs, ExplainArgs, OfferArgs, ProposeArgs,
+)
 from app.domain import ids
 from app.domain.apply import apply_ops
 from app.domain.errors import DomainError
@@ -133,6 +135,9 @@ def run_turn(*, client: Any, model: str, messages: list[dict], design: dict, rev
                 return TurnResult(reply=AnswerArgs.model_validate(arguments).answer)
             if call.function.name == OFFER:
                 return TurnResult(reply=OfferArgs.model_validate(arguments).reply, offer_profile=True)
+            if call.function.name == EXPLAIN:
+                # Words only: no proposal, so nothing can be applied from this turn.
+                return TurnResult(reply=ExplainArgs.model_validate(arguments).description)
             if call.function.name != PROPOSE:
                 raise ValueError(f"unknown tool {call.function.name!r}")
             args = ProposeArgs.model_validate(arguments)

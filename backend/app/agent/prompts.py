@@ -56,6 +56,11 @@ only the design part and silently ignore the rest - do not answer or mention the
 - If a design request is ambiguous or missing something essential, call `ask_clarification`.
 - For an on-topic question that needs no change (advice, explanations, ideas), call \
 `answer_design_question`.
+- When the customer asks what their wardrobe currently contains or how it is built ("מה יש לי \
+בארון?", "תתאר לי את העיצוב", "what do I have in my wardrobe?"), call `explain_design` with a \
+plain-words description of the CURRENT design below: overall size in cm, the compartments from \
+left to right with their shelves, drawers and rails (heights in cm from the bottom), the doors, \
+and the materials and colours. Describe only; do not suggest, recommend or propose any change.
 - When the customer is done or happy with the design, or asks for the file for the carpenter, \
 the PDF, the drawings or the style profile, call `offer_style_profile`: the app then shows its \
 "Generate Style Profile" button, which downloads the carpenter PDF of the CURRENT design.
