@@ -27,7 +27,8 @@ main.js (boot) ── api/client.js ──► GET /api/catalog, /api/designs/def
 | `viewer.js` | Renderer (`preserveDrawingBuffer` for the Phase 8 capture), camera, OrbitControls, store subscription, and `screenPointOf` / `meshOf` helpers. |
 | `picking.js` | Click → raycast → `store.select`. A drag (>5 px) is an orbit, not a click. A hit on the back panel selects the compartment under the cursor. |
 | `highlight.js` | Always-on-top accent outline. A compartment outlines its interior volume. |
-| `dimensions.js`, `format.js` | CSS2D labels for W/H/D and the selected component. Text is written with `textContent` only. Units are shown in cm with 1 decimal. |
+| `dimensions.js`, `format.js` | CSS2D labels for W/H/D and the selected component, plus the measuring tool's line and label. Text is written with `textContent` only. Units are shown in cm with 1 decimal. |
+| `state/measure.js` | **Measuring tool** (pure). Vertical and horizontal extents of any component from the design, `measureVertical` (clear gap, centre distance, overlap), the pick sequence and pruning. Picks live in `ui.measure` (view state): while measuring, a 3D click or an "All parts" button picks a part instead of selecting it, two picks draw the line, a third starts over. Nothing is measured from meshes, and nothing is dragged. |
 
 Coordinates: x = 0 at the outer left face, y = 0 at the floor, front face at z = 0, back at z = −depth. Doors sit in front (z > 0). Sliding doors use two depth tracks.
 

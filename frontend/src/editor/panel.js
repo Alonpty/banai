@@ -3,6 +3,7 @@
 // and shows an inline message. No LLM is involved in manual editing.
 import { compartmentsSection } from './compartmentsSection.js';
 import { componentSection } from './componentSection.js';
+import { measureSection } from './measureSection.js';
 import { partsSection } from './partsSection.js';
 import { wardrobeSection } from './wardrobeSection.js';
 
@@ -14,16 +15,23 @@ export function mountPanel(root, store, { onExport } = {}) {
       return { ok: false, error: { code: 'UNEXPECTED' } }; // shown as a generic message
     }
   };
-  const select = (id) => store.select(id);
-  let rendered = { design: null, selection: undefined };
+  // While measuring, "All parts" picks parts to measure (the keyboard path of the 3D click).
+  const select = (id) => (store.getState().ui.measure.on ? store.measurePick(id) : store.select(id));
+  const clearMeasure = () => store.measurePick(null);
+  const setMeasureMode = (on) => store.setMeasureMode(on);
+  let rendered = { design: null, selection: undefined, measure: undefined };
 
   const render = (state) => {
-    if (state.design === rendered.design && state.selection === rendered.selection) return;
-    rendered = { design: state.design, selection: state.selection };
-    const context = { design: state.design, catalog: state.catalog, selection: state.selection, run, select, onExport };
+    const { measure } = state.ui;
+    if (state.design === rendered.design && state.selection === rendered.selection && measure === rendered.measure) return;
+    rendered = { design: state.design, selection: state.selection, measure };
+    const context = {
+      design: state.design, catalog: state.catalog, selection: state.selection, run, select, onExport, measure, clearMeasure, setMeasureMode,
+    };
     // Re-rendering replaces every control: put keyboard focus back on the same one (WCAG 2.4.3).
     const focused = root.contains(document.activeElement) ? document.activeElement.dataset.testid : undefined;
     root.replaceChildren(
+      ...(measure.on ? [measureSection(context)] : []),
       ...(state.selection ? [componentSection(context)] : []),
       ...wardrobeSection(context),
       compartmentsSection(context),

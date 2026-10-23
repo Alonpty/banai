@@ -1,6 +1,6 @@
 // Interactive Three.js viewer. Renders ONLY from store state: it rebuilds the wardrobe
 // whenever the committed design (or door visibility) changes, and never edits state
-// except through store.select().
+// except through store.select() and, while measuring, store.measurePick().
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js';
@@ -62,7 +62,7 @@ export function createViewer(container, store) {
   const highlighter = createHighlighter(scene);
   const dimensions = createDimensions(scene);
   let group = null;
-  let rendered = { design: null, doorsVisible: null, selection: undefined, dimsKey: null };
+  let rendered = { design: null, doorsVisible: null, selection: undefined, dimsKey: null, measure: undefined };
 
   const fitCamera = (design) => {
     const { width, height, depth } = design.dimensions;
@@ -89,11 +89,12 @@ export function createViewer(container, store) {
       if (dimsKey !== rendered.dimsKey) fitCamera(design);
       rendered = { ...rendered, design, doorsVisible: ui.doorsVisible, dimsKey };
     }
-    if (geometryChanged || selection !== rendered.selection) {
+    if (geometryChanged || selection !== rendered.selection || ui.measure !== rendered.measure) {
       highlighter.update(group, design, selection);
-      dimensions.update(group, design, selection);
-      rendered = { ...rendered, selection };
+      dimensions.update(group, design, selection, ui.measure);
+      rendered = { ...rendered, selection, measure: ui.measure };
     }
+    renderer.domElement.classList.toggle('viewer--measuring', ui.measure.on);
   };
 
   const resize = () => {
@@ -111,8 +112,17 @@ export function createViewer(container, store) {
     dom: renderer.domElement,
     camera,
     getTargets: () => (group ? group.children : []),
-    onPick: (hit) => store.select(componentAt(hit, store.getState().design)),
-    onHover: (hit) => { renderer.domElement.style.cursor = hit?.object.userData.componentId ? 'pointer' : ''; },
+    onPick: (hit) => {
+      const { design, ui } = store.getState();
+      const id = componentAt(hit, design);
+      // While measuring, a click picks a part to measure and leaves the selection alone.
+      if (ui.measure.on) store.measurePick(id);
+      else store.select(id);
+    },
+    onHover: (hit) => {
+      const over = Boolean(hit?.object.userData.componentId);
+      renderer.domElement.style.cursor = store.getState().ui.measure.on ? 'crosshair' : (over ? 'pointer' : '');
+    },
   });
   const unsubscribe = store.subscribe(sync);
   sync(store.getState());

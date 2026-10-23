@@ -81,6 +81,13 @@ body {
   background: var(--md-sys-color-primary);
   color: var(--md-sys-color-on-primary);
 }
+.dim-label--measure {
+  border-color: var(--md-sys-color-tertiary);
+  background: var(--md-sys-color-tertiary);
+  color: var(--md-sys-color-on-tertiary, #ffffff);
+}
+.viewer canvas.viewer--measuring { cursor: crosshair; }
+.measure__result { margin: 0 0 var(--space-3); font: var(--md-sys-typescale-body-medium); color: var(--md-sys-color-tertiary); font-weight: 600; }
 
 /* Accessibility statement page (accessibility.html) */
 body.statement { height: auto; min-height: 100vh; display: block; }

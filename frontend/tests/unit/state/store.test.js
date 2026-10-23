@@ -120,3 +120,45 @@ describe('replaceDesign (applied AI proposal)', () => {
     expect(store.getState()).toBe(before);
   });
 });
+
+describe('store: measuring tool (view state)', () => {
+  it('is off by default; picks collect while on and clear when turned off', () => {
+    const store = makeStore();
+    expect(store.getState().ui.measure).toEqual({ on: false, ids: [] });
+    store.measurePick('shf_l1'); // ignored while off
+    expect(store.getState().ui.measure.ids).toEqual([]);
+    store.setMeasureMode(true);
+    store.measurePick('shf_l1');
+    store.measurePick('shf_l2');
+    expect(store.getState().ui.measure.ids).toEqual(['shf_l1', 'shf_l2']);
+    store.measurePick('shf_l3');
+    expect(store.getState().ui.measure.ids).toEqual(['shf_l3']);
+    store.measurePick(null);
+    expect(store.getState().ui.measure.ids).toEqual([]);
+    store.measurePick('shf_l1');
+    store.setMeasureMode(false);
+    expect(store.getState().ui.measure).toEqual({ on: false, ids: [] });
+  });
+
+  it('never changes the design, revision or selection, and ignores unknown ids', () => {
+    const store = makeStore();
+    store.select('dr_left');
+    const { design, revision, selection } = store.getState();
+    store.setMeasureMode(true);
+    store.measurePick('shf_l1');
+    store.measurePick('nope');
+    expect(store.getState().ui.measure.ids).toEqual(['shf_l1']);
+    expect(store.getState().design).toBe(design);
+    expect(store.getState().revision).toBe(revision);
+    expect(store.getState().selection).toBe(selection);
+  });
+
+  it('drops a pick whose part was removed', () => {
+    const store = makeStore();
+    store.setMeasureMode(true);
+    store.measurePick('shf_l1');
+    store.measurePick('shf_l2');
+    store.dispatch([{ op: 'remove_component', id: 'shf_l2' }]);
+    expect(store.getState().ui.measure).toEqual({ on: true, ids: ['shf_l1'] });
+  });
+});

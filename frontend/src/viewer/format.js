@@ -1,5 +1,27 @@
 // Display formatting. The domain is integer mm; the UI shows centimetres (1 decimal).
+import { measureVertical, partName } from '../state/measure.js';
+
 export const cm = (mm) => (mm / 10).toFixed(1);
+
+/** Short text for the measure label in the 3D view. */
+export function measureLabel(design, ids) {
+  if (ids.length < 2) return ids.length === 0 ? 'Measure: pick a part' : 'Pick a second part';
+  const result = measureVertical(design, ids[0], ids[1]);
+  if (!result) return '';
+  return result.overlap ? `Overlap · centres ${cm(result.centres)} cm` : `Gap ${cm(result.gap)} cm`;
+}
+
+/** Full sentence for the properties panel (screen readers get the same measurement). */
+export function describeMeasure(design, ids) {
+  if (ids.length === 0) return 'Pick the first part.';
+  if (ids.length === 1) return `${partName(design, ids[0])} → pick a second part.`;
+  const result = measureVertical(design, ids[0], ids[1]);
+  if (!result) return '';
+  const lower = partName(design, result.lower.id);
+  const upper = partName(design, result.upper.id);
+  if (result.overlap) return `${lower} and ${upper} overlap vertically · centres ${cm(result.centres)} cm apart.`;
+  return `${lower} → ${upper}: clear gap ${cm(result.gap)} cm · centres ${cm(result.centres)} cm apart.`;
+}
 
 /** One-line description of a selected component, for labels and readouts. */
 export function describeSelection(design, selection) {
