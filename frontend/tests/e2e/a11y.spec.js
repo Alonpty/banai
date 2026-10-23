@@ -7,7 +7,7 @@ const TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
 async function expectNoViolations(page) {
   // Let entrance animations (fades) finish, or axe measures half-transparent text.
   await page.evaluate(() => Promise.all(document.getAnimations()
-    .filter((a) => a.effect?.getTiming().iterations !== Infinity).map((a) => a.finished)));
+    .filter((a) => a.effect?.getTiming().iterations !== Infinity).map((a) => a.finished.catch(() => {})))); // a cancelled animation rejects; that is fine
   const { violations } = await new AxeBuilder({ page }).withTags(TAGS).analyze();
   const summary = violations.map((v) => `${v.id}: ${v.nodes.map((n) => `${n.target.join(' ')} ${n.any[0]?.message ?? ''}`).join(', ')}`);
   expect(summary, summary.join('\n')).toEqual([]);
@@ -56,9 +56,19 @@ test.describe('keyboard only', () => {
     await expect(page.getByTestId('part-shf_l1')).toBeFocused(); // focus survives the re-render
   });
 
-  test('the skip link moves focus to the properties panel', async ({ page }) => {
+  test('choosing the basic wardrobe moves focus into the properties panel', async ({ page }) => {
     await openDesigner(page);
+    await expect(page.locator('#properties-panel')).toBeFocused();
     await page.keyboard.press('Tab');
+    await expect(page.getByTestId('dim-width')).toBeFocused();
+  });
+
+  test('the skip link moves focus to the properties panel', async ({ page }) => {
+    await page.goto('/'); // a fresh load: the skip link is the first tab stop of the page
+    await page.getByTestId('start-screen').waitFor();
+    await page.evaluate(() => document.querySelector('[data-testid="start-screen"]').close());
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('link', { name: 'Skip to properties' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Skip to properties' })).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(page.locator('#properties-panel')).toBeFocused();

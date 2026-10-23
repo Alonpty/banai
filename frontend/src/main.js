@@ -161,8 +161,10 @@ async function boot() {
   if (session) return; // reopened from a link: straight into the editor
   mountStartScreen({
     onChoose: (entry) => {
-      // All three entry points open the same editor; the chat ones also focus the composer.
+      // All three entry points open the same editor; the chat ones focus the composer, the manual
+      // one the properties panel, so keyboard focus never falls out of the page when the modal closes.
       if (entry.focusesChat) chat.focus(entry.id);
+      else document.getElementById('properties-panel').focus();
     },
   });
 }
