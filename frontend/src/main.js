@@ -29,6 +29,15 @@ function showError(message) {
   banner.hidden = false;
 }
 
+// The skip link moves focus without touching the hash: the hash may hold the private design link.
+function bindSkipLink() {
+  const link = document.querySelector('.skip-link');
+  link.addEventListener('click', (event) => {
+    event.preventDefault();
+    document.querySelector(link.getAttribute('href')).focus();
+  });
+}
+
 function bindInteriorToggle(store) {
   const toggle = document.getElementById('toggle-interior');
   toggle.addEventListener('change', () => store.setDoorsVisible(!toggle.checked));
@@ -96,6 +105,7 @@ async function boot() {
   const store = createStore({ design: initial.design, revision: initial.revision, catalog });
   const viewer = createViewer(document.getElementById('viewer'), store);
   bindInteriorToggle(store);
+  bindSkipLink();
   const exporter = createExportDialog({
     getDesign: () => store.getState().design,
     getLanguage: () => language.get(),
