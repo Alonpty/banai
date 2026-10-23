@@ -45,6 +45,41 @@ test.describe('save and reopen', () => {
     expect(await reopened.evaluate(() => window.__banai.store.getState().design.dimensions.height)).toBe(2200);
   });
 
+  test('Save as copy gives a second link and leaves the original design untouched', async ({ page, context }) => {
+    test.slow(); // three WebGL page loads (the editor and both reopened links) under SwiftShader
+    await openDesigner(page);
+    // Nothing to copy before the first save.
+    await page.getByTestId('open-save').click();
+    await expect(page.getByTestId('save-copy')).toBeDisabled();
+    await page.getByTestId('save-close').click();
+
+    expect(await setHeight(page, 2300)).toBe(true);
+    const original = await saveFromDialog(page);
+
+    expect(await setHeight(page, 2100)).toBe(true);
+    await page.getByTestId('open-save').click();
+    await page.getByTestId('save-copy').click();
+    await expect(page.getByTestId('save-status')).toContainText('Saved as a copy');
+    const copy = await page.getByTestId('share-link').inputValue();
+    expect(copy).toMatch(LINK);
+    expect(copy).not.toBe(original);
+    await expect(page).toHaveURL(copy); // the page now edits the copy
+    await page.getByTestId('save-close').click();
+
+    // Later saves go to the copy, not the original.
+    expect(await setHeight(page, 2200)).toBe(true);
+    expect(await saveFromDialog(page)).toBe(copy);
+
+    const heightAt = async (link) => {
+      const reopened = await context.newPage();
+      await reopened.goto(link);
+      await reopened.waitForFunction(() => window.__banai?.viewer.meshOf('shf_l1'));
+      return reopened.evaluate(() => window.__banai.store.getState().design.dimensions.height);
+    };
+    expect(await heightAt(original)).toBe(2300); // the old link still opens the original
+    expect(await heightAt(copy)).toBe(2200);
+  });
+
   test.describe('conflicts', () => {
     test.use({ allowedConsoleErrors: [/409/] });
 

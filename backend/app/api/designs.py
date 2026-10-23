@@ -99,6 +99,9 @@ async def _parse_save(request: Request) -> SaveRequest | JSONResponse:
 
 @router.post("/designs", status_code=201)
 async def create_design(request: Request):
+    """A new design behind a new link. "Save as copy" uses this same route: the client posts the
+    design it is showing and gets a fresh id and token, so the row behind the old link is never touched
+    (the token of the original is not even sent)."""
     repository = get_repository()
     if repository is None:
         return _fail(503, "STORAGE_UNAVAILABLE", "he")
