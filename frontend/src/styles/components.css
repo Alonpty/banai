@@ -261,3 +261,12 @@
 /* The pinned "design ready" note in the chat, with Generate Style Profile. */
 .chat__built-body { display: flex; flex-direction: column; gap: var(--space-2); }
 .chat__built .button-row { margin-top: 0; }
+
+/* Room photo */
+.dialog--wide { width: min(960px, calc(100vw - 32px)); }
+.room__controls { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+.room__controls label { display: flex; align-items: center; gap: var(--space-2); font: var(--md-sys-typescale-label-large); }
+.room__controls input[type="number"] { width: 5em; padding: var(--space-1) var(--space-2); border: 1px solid var(--md-sys-color-outline); border-radius: var(--md-sys-shape-small); font: inherit; }
+.room__stage { position: relative; display: grid; place-items: center; min-height: 240px; max-height: 60vh; overflow: hidden; border: 1px dashed var(--md-sys-color-outline); border-radius: var(--md-sys-shape-medium); background: var(--md-sys-color-surface-container); }
+.room__stage canvas { max-width: 100%; max-height: 60vh; cursor: crosshair; touch-action: none; }
+.room__stage canvas[data-dragging="true"] { cursor: grabbing; }

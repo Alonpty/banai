@@ -144,11 +144,11 @@ function frameCamera(camera, design) {
  * Render the design to a JPEG data URL (smaller than PNG for a photo-like image).
  * Throws when WebGL is unavailable; callers fall back to the PDF's own illustration.
  */
-export function renderSnapshot(design, catalog, { width, height } = SNAPSHOT_SIZE) {
+export function renderSnapshot(design, catalog, { width, height, transparent = false } = SNAPSHOT_SIZE) {
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true, alpha: transparent });
   // Everything after the context exists is inside try, so a failure never leaks a WebGL context.
   let materials = null;
   let group = null;
@@ -164,6 +164,12 @@ export function renderSnapshot(design, catalog, { width, height } = SNAPSHOT_SIZ
     renderer.setPixelRatio(1);
     renderer.setSize(width, height, false);
     staged = studio(design, renderer);
+    if (transparent) {
+      // For the room-photo composite: no studio wall/floor, so only the wardrobe is painted.
+      staged.scene.background = null;
+      staged.surfaces.forEach((mesh) => mesh.removeFromParent());
+      renderer.setClearColor(0x000000, 0);
+    }
     group.traverse((object) => {
       if (object.isMesh) {
         object.castShadow = true;
@@ -174,7 +180,7 @@ export function renderSnapshot(design, catalog, { width, height } = SNAPSHOT_SIZ
     const camera = new THREE.PerspectiveCamera(22, width / height, 0.05, 80);
     frameCamera(camera, design);
     renderer.render(staged.scene, camera);
-    return canvas.toDataURL('image/jpeg', 0.9);
+    return transparent ? canvas.toDataURL('image/png') : canvas.toDataURL('image/jpeg', 0.9);
   } finally {
     if (group) disposeWardrobe(group);
     if (staged) {

@@ -20,6 +20,7 @@ import { createSaveDialog } from './share/saveDialog.js';
 import { parseShareHash, shareHash } from './share/link.js';
 import { createExportDialog } from './export/exportDialog.js';
 import { createRenderDialog } from './render/renderDialog.js';
+import { createRoomPhotoDialog } from './room/roomPhotoDialog.js';
 import { createLogo } from './ui/logo.js';
 import { installRipple } from './ui/ripple.js';
 
@@ -77,11 +78,16 @@ function createSaver(store, language, initialSession) {
   };
 }
 
-function bindDialogs({ storage, onSave, link }) {
+function bindDialogs({ storage, onSave, link, getDesign, getCatalog: catalogOf }) {
   const save = createSaveDialog({ available: storage, onSave, link });
   const render = createRenderDialog();
+  const room = createRoomPhotoDialog({
+    getDesign,
+    getCutout: (design) => renderSnapshot(design, catalogOf(), { width: 1200, height: 1300, transparent: true }),
+  });
   document.getElementById('open-save').addEventListener('click', save.open);
   document.getElementById('open-render').addEventListener('click', render.open);
+  document.getElementById('open-room').addEventListener('click', room.open);
 }
 
 async function boot() {
@@ -116,6 +122,8 @@ async function boot() {
     storage: health?.data.storage === true,
     onSave: createSaver(store, language, session),
     link: session ? window.location.href : '',
+    getDesign: () => store.getState().design,
+    getCatalog: () => store.getState().catalog,
   });
 
   // The agent is optional: without an OpenAI key on the server the panel says so honestly.
